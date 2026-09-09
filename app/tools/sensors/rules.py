@@ -6,7 +6,7 @@ Thresholds come from ``app/data/thresholds.yaml`` and are reloaded per call.
 from __future__ import annotations
 
 from functools import lru_cache
-from pathlib import Path
+
 from typing import Any, Dict
 
 import yaml
@@ -43,6 +43,17 @@ def analyze(payload: SensorInput) -> Dict[str, Any]:
     level = "low"
 
     stage = payload.growth_stage.value
+
+    # --- plausibility gate: drop physically impossible readings ---------- #
+    payload = payload.model_copy()
+    for field, (lo, hi) in th.get("plausibility", {}).items():
+        val = getattr(payload, field, None)
+        if val is not None and not (lo <= val <= hi):
+            anomalies.append(
+                f"{field}={val} is outside the plausible range [{lo}, {hi}] — "
+                f"likely a faulty sensor or input error; ignored for risk scoring"
+            )
+            setattr(payload, field, None)
 
     # --- soil moisture ------------------------------------------------- #
     sm = payload.soil_moisture_pct

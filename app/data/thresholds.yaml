@@ -38,6 +38,15 @@ rainfall_mm:
   moderate: 10
   heavy: 30
 
+# Physical plausibility windows. A reading outside its window is almost certainly
+# a broken sensor or a typo; it is flagged as an anomaly and then IGNORED for
+# risk scoring (treated as a missing field), never analysed as if real.
+plausibility:
+  temperature_c:   [-30, 60]
+  soil_moisture_pct: [0, 100]
+  air_humidity_pct:  [0, 100]
+  rainfall_mm:       [0, 2000]
+
 # Weighting used when combining sub-scores into a single indicator (0..1).
 risk_weights:
   water_stress: 0.40
