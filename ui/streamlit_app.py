@@ -114,16 +114,20 @@ with left:
             st.warning(f"Image rejected: {exc}")
             image_bytes = None
 
+    def _pre(key):
+        v = ls.get(key)
+        return float(v) if v is not None else None
+
     c1, c2 = st.columns(2)
-    temp = c1.number_input("Temperature (°C)", value=float(ls.get("temperature_c") or 0.0) or None,
-                           step=0.5, format="%.1f", placeholder="—")
-    soil = c2.number_input("Soil moisture (%)", value=float(ls["soil_moisture_pct"]) if ls.get("soil_moisture_pct") is not None else None,
+    temp = c1.number_input("Temperature (°C)", value=_pre("temperature_c"),
+                           min_value=-30.0, max_value=60.0, step=0.5, format="%.1f", placeholder="—")
+    soil = c2.number_input("Soil moisture (%)", value=_pre("soil_moisture_pct"),
                            min_value=0.0, max_value=100.0, step=1.0, placeholder="—")
     c3, c4 = st.columns(2)
-    airh = c3.number_input("Air humidity (%)", value=float(ls["air_humidity_pct"]) if ls.get("air_humidity_pct") is not None else None,
+    airh = c3.number_input("Air humidity (%)", value=_pre("air_humidity_pct"),
                            min_value=0.0, max_value=100.0, step=1.0, placeholder="—")
-    rain = c4.number_input("Rainfall (mm)", value=float(ls["rainfall_mm"]) if ls.get("rainfall_mm") is not None else None,
-                           min_value=0.0, step=0.5, placeholder="—")
+    rain = c4.number_input("Rainfall (mm)", value=_pre("rainfall_mm"),
+                           min_value=0.0, max_value=2000.0, step=0.5, placeholder="—")
 
     stages = [g.value for g in GrowthStage]
     stage_default = ls.get("growth_stage", "unknown")
@@ -149,13 +153,13 @@ if analyze:
         image_bytes=image_bytes,
         image_name=(up.name if up is not None else loaded.get("image")),
         sensors=SensorReadings(
-            temperature_c=temp if temp not in (None, 0.0) or (loaded and ls.get("temperature_c")) else (temp or None),
+            temperature_c=temp,
             soil_moisture_pct=soil,
             air_humidity_pct=airh,
             rainfall_mm=rain,
             growth_stage=stage,
         ),
-        location=Location(label=loc_label or None, latitude=lat, longitude=lon),
+        location=Location(label=(loc_label.strip()[:120] or None), latitude=lat, longitude=lon),
         scenario_id=loaded.get("id") if loaded else None,
     )
     with right:
@@ -228,6 +232,8 @@ if result is not None:
         else:
             st.caption(f"method: {s.get('method', '')}")
             st.markdown(f"**Sensor risk level:** {_badge(s.get('risk_level', 'unknown'))}", unsafe_allow_html=True)
+            st.caption("Single-tool view from sensor thresholds alone. The multimodal "
+                       "**combined risk** (Risk assessment tab) weights this together with image and weather.")
             import pandas as pd
 
             df = pd.DataFrame(s.get("indicators", []))
