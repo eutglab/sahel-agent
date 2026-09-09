@@ -33,7 +33,19 @@ def test_recommendation_always_has_warning_and_limitations():
 def test_recommendation_unknown_risk_is_low_priority():
     out = synthesize(RecommendationInput(risk=None, modalities=[]))
     assert out["priority"] == "low"
-    assert "Insufficient data" in out["main_finding"]
+    assert "insufficient" in out["main_finding"].lower()
+
+
+def test_recommendation_surfaces_contradiction():
+    risk = _risk("low")
+    risk["cross_check"] = {
+        "converging_evidence": [],
+        "diverging_evidence": ["Image shows no visible stress signs, but sensor readings indicate elevated risk."],
+    }
+    out = synthesize(RecommendationInput(risk=risk, modalities=["sensors", "image"]))
+    # A contradiction must not read as "all clear".
+    assert out["priority"] == "medium"
+    assert "not fully converge" in out["main_finding"] or "provisional" in out["main_finding"]
 
 
 def test_recommendation_tool_contract():

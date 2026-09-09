@@ -152,7 +152,7 @@
       },
       "cross_check": {
         "converging_evidence": [
-          "Water stress is supported by sensor readings + image observations + weather forecast"
+          "Water-stress signal supported by sensor readings + image observations + weather forecast"
         ],
         "diverging_evidence": [],
         "confidence_adjustment": 0.1
@@ -174,7 +174,7 @@
       "Weather (local dataset): rain probability ~12.0%; revisit irrigation plan if this changes."
     ],
     "warnings": [
-      "Converging evidence: Water stress is supported by sensor readings + image observations + weather forecast.",
+      "Converging evidence: Water-stress signal supported by sensor readings + image observations + weather forecast.",
       "This is decision SUPPORT, not agronomic advice. Figures are prototype indicators and require confirmation by a qualified person on site."
     ],
     "confidence": 0.82,
