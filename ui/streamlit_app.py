@@ -19,7 +19,7 @@ from app.agent.agent import SahelAgent  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.schemas import AgentInput, GrowthStage, Location, SensorReadings  # noqa: E402
 from app.core.security import validate_image_upload  # noqa: E402
-from app.data.demo_data import list_scenarios, load_scenario_image  # noqa: E402
+from app.data.demo_data import get_scenario, list_scenarios, load_scenario_image  # noqa: E402
 
 st.set_page_config(page_title="SAHEL Agent", page_icon="🌍", layout="wide")
 
@@ -40,6 +40,13 @@ h1, h2, h3 {letter-spacing: -0.01em;}
 </style>
 """
 st.markdown(_CSS, unsafe_allow_html=True)
+
+# --- DEMO_JUDGE_MODE: preload the strongest scenario once, zero clicks to set up.
+if settings.demo_judge_mode and "_judge_init" not in st.session_state:
+    _scn = get_scenario(settings.demo_judge_scenario) or (list_scenarios() or [None])[0]
+    if _scn:
+        st.session_state["loaded"] = _scn
+    st.session_state["_judge_init"] = True
 
 
 def _badge(level: str) -> str:
@@ -95,6 +102,9 @@ ll = loaded.get("location", {}) if loaded else {}
 st.title("SAHEL Agent")
 st.markdown('<p class="sahel-sub">Multimodal AI Agent for Environmental &amp; Agricultural Intelligence</p>',
             unsafe_allow_html=True)
+if settings.demo_judge_mode:
+    st.info(f"**Judge demo mode** — scenario *{loaded.get('title', settings.demo_judge_scenario)}* "
+            f"is preloaded. Press **ANALYZE** to run the agent.")
 st.write("")
 
 left, right = st.columns([1, 1])

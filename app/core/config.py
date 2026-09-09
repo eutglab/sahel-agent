@@ -81,6 +81,9 @@ def redact(value: str) -> str:
 class Settings:
     environment: str = field(default_factory=lambda: _get("ENVIRONMENT", "demo").lower())
     demo_mode: bool = field(default_factory=lambda: _get_bool("DEMO_MODE", True))
+    # One-click judge demo: preloads the strongest scenario in the UI.
+    demo_judge_mode: bool = field(default_factory=lambda: _get_bool("DEMO_JUDGE_MODE", False))
+    demo_judge_scenario: str = field(default_factory=lambda: _get("DEMO_JUDGE_SCENARIO", "multiple_risks"))
 
     llm_provider: str = field(default_factory=lambda: _get("LLM_PROVIDER", "mock").lower())
     anthropic_model: str = field(default_factory=lambda: _get("ANTHROPIC_MODEL", "claude-haiku-4-5"))
@@ -135,6 +138,7 @@ class Settings:
         return {
             "environment": self.environment,
             "demo_mode": self.demo_mode,
+            "demo_judge_mode": self.demo_judge_mode,
             "llm_provider": self.llm_provider,
             "weather_provider": self.weather_provider,
             "vision_provider": self.vision_provider,
