@@ -1,0 +1,168 @@
+{
+  "scenario_id": "normal",
+  "modalities_used": [
+    "image",
+    "sensors",
+    "location",
+    "text"
+  ],
+  "tools_used": [
+    "analyze_image",
+    "analyze_sensor_data",
+    "get_weather",
+    "calculate_risk",
+    "generate_recommendation"
+  ],
+  "observation": {
+    "modalities": [
+      "image",
+      "sensors",
+      "location",
+      "text"
+    ],
+    "vision": {
+      "observations": [
+        "Green foliage covers ~91% of the frame.",
+        "Yellow/brown tones cover ~6% of the frame.",
+        "Mean brightness ~31% of maximum."
+      ],
+      "possible_signs": [],
+      "confidence": 0.51,
+      "limitations": [
+        "Colour-statistics heuristic only \u2014 not plant pathology.",
+        "Sensitive to lighting, camera, background and framing.",
+        "Possible signs require field confirmation by a qualified person."
+      ],
+      "method": "local colour heuristic"
+    },
+    "sensors": {
+      "risk_level": "low",
+      "indicators": [
+        {
+          "name": "soil_moisture_pct",
+          "value": 42.0,
+          "assessment": "optimal",
+          "detail": ""
+        },
+        {
+          "name": "temperature_c",
+          "value": 26.0,
+          "assessment": "optimal",
+          "detail": ""
+        },
+        {
+          "name": "air_humidity_pct",
+          "value": 55.0,
+          "assessment": "optimal",
+          "detail": ""
+        },
+        {
+          "name": "rainfall_mm",
+          "value": 6.0,
+          "assessment": "light",
+          "detail": ""
+        },
+        {
+          "name": "growth_stage",
+          "value": null,
+          "assessment": "vegetative",
+          "detail": "context only"
+        }
+      ],
+      "anomalies": [],
+      "explanation": [
+        "Sensor values are within acceptable prototype ranges; no threshold breaches detected."
+      ],
+      "missing_fields": [],
+      "method": "rule-based thresholds (prototype, requires local calibration)"
+    },
+    "weather": {
+      "source": "local dataset",
+      "temperature_c": 36.0,
+      "humidity_pct": 29.0,
+      "rainfall_mm": 0.0,
+      "rain_probability": 8.0,
+      "forecast": [
+        {
+          "day": "day+1",
+          "temp_max_c": 38.0,
+          "temp_min_c": 24.0,
+          "rainfall_mm": 0.0,
+          "rain_probability": 5.0
+        },
+        {
+          "day": "day+2",
+          "temp_max_c": 39.0,
+          "temp_min_c": 25.0,
+          "rainfall_mm": 0.0,
+          "rain_probability": 6.0
+        },
+        {
+          "day": "day+3",
+          "temp_max_c": 37.0,
+          "temp_min_c": 24.0,
+          "rainfall_mm": 0.0,
+          "rain_probability": 10.0
+        }
+      ],
+      "note": "Bundled offline weather record for a fictional location."
+    },
+    "risk": {
+      "water_stress": {
+        "name": "water_stress",
+        "score": 0.0,
+        "level": "low",
+        "drivers": []
+      },
+      "heat_stress": {
+        "name": "heat_stress",
+        "score": 0.15,
+        "level": "low",
+        "drivers": [
+          "weather temperature also elevated (36.0\u00b0C)"
+        ]
+      },
+      "environmental": {
+        "name": "environmental",
+        "score": 0.0,
+        "level": "low",
+        "drivers": []
+      },
+      "combined_risk": {
+        "name": "combined_risk",
+        "score": 0.052,
+        "level": "low",
+        "drivers": [
+          "no sub-score reached the 'moderate' band"
+        ]
+      },
+      "cross_check": {
+        "converging_evidence": [],
+        "diverging_evidence": [],
+        "confidence_adjustment": 0.0
+      },
+      "confidence": 0.72,
+      "disclaimer": "Prototype indicator derived from transparent heuristics. Not a validated agronomic model. Requires local calibration and field confirmation."
+    },
+    "notes": []
+  },
+  "recommendation": {
+    "priority": "low",
+    "main_finding": "Combined environmental risk is low at the vegetative stage; main contributor(s): no single dominant driver.",
+    "recommended_actions": [
+      "No urgent intervention indicated by the prototype heuristics; maintain the normal plan."
+    ],
+    "monitoring_actions": [
+      "Weather (local dataset): rain probability ~8.0%; revisit irrigation plan if this changes."
+    ],
+    "warnings": [
+      "This is decision SUPPORT, not agronomic advice. Figures are prototype indicators and require confirmation by a qualified person on site."
+    ],
+    "confidence": 0.72,
+    "limitations": [
+      "Heuristic rules, not a validated model; thresholds need local calibration.",
+      "Based on modalities: image, sensors, location, text."
+    ],
+    "method": "deterministic template"
+  }
+}

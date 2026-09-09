@@ -1,0 +1,19 @@
+{
+  "id": "normal",
+  "title": "Scenario 1 \u2014 Normal conditions",
+  "description": "Baseline: readings within prototype ranges. Agent runs all applicable tools.",
+  "text_context": "Routine check of a field plot under normal conditions.",
+  "image": "normal.jpg",
+  "sensors": {
+    "temperature_c": 26,
+    "soil_moisture_pct": 42,
+    "air_humidity_pct": 55,
+    "rainfall_mm": 6,
+    "growth_stage": "vegetative"
+  },
+  "location": {
+    "label": "Fictional Site Alpha",
+    "latitude": 14.5,
+    "longitude": -4.2
+  }
+}

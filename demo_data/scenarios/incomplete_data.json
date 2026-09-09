@@ -1,0 +1,19 @@
+{
+  "id": "incomplete_data",
+  "title": "Scenario 5 \u2014 Incomplete information",
+  "description": "No image, no location, only two sensor values. Agent must skip tools and lower confidence.",
+  "text_context": "Only partial sensor data available from the field today.",
+  "image": null,
+  "sensors": {
+    "temperature_c": 36,
+    "soil_moisture_pct": 20,
+    "air_humidity_pct": null,
+    "rainfall_mm": null,
+    "growth_stage": "fruiting"
+  },
+  "location": {
+    "label": null,
+    "latitude": null,
+    "longitude": null
+  }
+}

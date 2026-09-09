@@ -1,0 +1,123 @@
+{
+  "scenario_id": "incomplete_data",
+  "modalities_used": [
+    "sensors",
+    "text"
+  ],
+  "tools_used": [
+    "analyze_sensor_data",
+    "calculate_risk",
+    "generate_recommendation"
+  ],
+  "observation": {
+    "modalities": [
+      "sensors",
+      "text"
+    ],
+    "vision": null,
+    "sensors": {
+      "risk_level": "elevated",
+      "indicators": [
+        {
+          "name": "soil_moisture_pct",
+          "value": 20.0,
+          "assessment": "low",
+          "detail": "growth stage is moisture-sensitive"
+        },
+        {
+          "name": "temperature_c",
+          "value": 36.0,
+          "assessment": "heat stress",
+          "detail": ""
+        },
+        {
+          "name": "growth_stage",
+          "value": null,
+          "assessment": "fruiting",
+          "detail": "context only"
+        }
+      ],
+      "anomalies": [
+        "soil moisture 20.0% is low (<25%)",
+        "temperature 36.0\u00b0C in heat-stress range (>=35\u00b0C)"
+      ],
+      "explanation": [
+        "Low soil moisture at the fruiting stage can restrict water uptake; confirm with a field probe before acting.",
+        "Air temperature around 36.0\u00b0C increases evapotranspiration and can compound water stress."
+      ],
+      "missing_fields": [
+        "air_humidity_pct",
+        "rainfall_mm"
+      ],
+      "method": "rule-based thresholds (prototype, requires local calibration)"
+    },
+    "weather": null,
+    "risk": {
+      "water_stress": {
+        "name": "water_stress",
+        "score": 0.5,
+        "level": "moderate",
+        "drivers": [
+          "soil moisture low",
+          "fruiting stage is water-sensitive"
+        ]
+      },
+      "heat_stress": {
+        "name": "heat_stress",
+        "score": 0.45,
+        "level": "moderate",
+        "drivers": [
+          "temperature in heat-stress range"
+        ]
+      },
+      "environmental": {
+        "name": "environmental",
+        "score": 0.0,
+        "level": "low",
+        "drivers": []
+      },
+      "combined_risk": {
+        "name": "combined_risk",
+        "score": 0.358,
+        "level": "moderate",
+        "drivers": [
+          "water stress: moderate",
+          "heat stress: moderate"
+        ]
+      },
+      "cross_check": {
+        "converging_evidence": [],
+        "diverging_evidence": [],
+        "confidence_adjustment": 0.0
+      },
+      "confidence": 0.4,
+      "disclaimer": "Prototype indicator derived from transparent heuristics. Not a validated agronomic model. Requires local calibration and field confirmation."
+    },
+    "notes": [
+      "No image supplied \u2014 skipping visual analysis.",
+      "No location supplied \u2014 skipping weather retrieval."
+    ]
+  },
+  "recommendation": {
+    "priority": "medium",
+    "main_finding": "Combined environmental risk is moderate at the fruiting stage; main contributor(s): water stress (moderate), heat stress (moderate).",
+    "recommended_actions": [
+      "Plan supplemental irrigation in the next 1-2 days if no rain is forecast.",
+      "Schedule field work for early morning/evening to limit heat exposure."
+    ],
+    "monitoring_actions": [
+      "Track: soil moisture 20.0% is low (<25%).",
+      "Track: temperature 36.0\u00b0C in heat-stress range (>=35\u00b0C)."
+    ],
+    "warnings": [
+      "This is decision SUPPORT, not agronomic advice. Figures are prototype indicators and require confirmation by a qualified person on site."
+    ],
+    "confidence": 0.4,
+    "limitations": [
+      "Heuristic rules, not a validated model; thresholds need local calibration.",
+      "Based on modalities: sensors, text.",
+      "Missing sensor inputs: air_humidity_pct, rainfall_mm."
+    ],
+    "method": "deterministic template"
+  }
+}

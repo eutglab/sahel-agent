@@ -1,0 +1,195 @@
+{
+  "scenario_id": "multiple_risks",
+  "modalities_used": [
+    "image",
+    "sensors",
+    "location",
+    "text"
+  ],
+  "tools_used": [
+    "analyze_image",
+    "analyze_sensor_data",
+    "get_weather",
+    "calculate_risk",
+    "generate_recommendation"
+  ],
+  "observation": {
+    "modalities": [
+      "image",
+      "sensors",
+      "location",
+      "text"
+    ],
+    "vision": {
+      "observations": [
+        "Green foliage covers ~37% of the frame.",
+        "Yellow/brown tones cover ~58% of the frame.",
+        "Mean brightness ~40% of maximum."
+      ],
+      "possible_signs": [
+        "noticeable yellow/brown discolouration \u2014 potential stress or senescence"
+      ],
+      "confidence": 0.6,
+      "limitations": [
+        "Colour-statistics heuristic only \u2014 not plant pathology.",
+        "Sensitive to lighting, camera, background and framing.",
+        "Possible signs require field confirmation by a qualified person."
+      ],
+      "method": "local colour heuristic"
+    },
+    "sensors": {
+      "risk_level": "elevated",
+      "indicators": [
+        {
+          "name": "soil_moisture_pct",
+          "value": 18.0,
+          "assessment": "low",
+          "detail": "growth stage is moisture-sensitive"
+        },
+        {
+          "name": "temperature_c",
+          "value": 37.0,
+          "assessment": "heat stress",
+          "detail": ""
+        },
+        {
+          "name": "air_humidity_pct",
+          "value": 31.0,
+          "assessment": "low",
+          "detail": ""
+        },
+        {
+          "name": "rainfall_mm",
+          "value": 0.0,
+          "assessment": "none recorded",
+          "detail": ""
+        },
+        {
+          "name": "growth_stage",
+          "value": null,
+          "assessment": "flowering",
+          "detail": "context only"
+        }
+      ],
+      "anomalies": [
+        "soil moisture 18.0% is low (<25%)",
+        "temperature 37.0\u00b0C in heat-stress range (>=35\u00b0C)"
+      ],
+      "explanation": [
+        "Low soil moisture at the flowering stage can restrict water uptake; confirm with a field probe before acting.",
+        "Air temperature around 37.0\u00b0C increases evapotranspiration and can compound water stress.",
+        "Low air humidity (31.0%) raises the vapour-pressure deficit and water demand.",
+        "No recent rainfall combined with low soil moisture points to developing water stress."
+      ],
+      "missing_fields": [],
+      "method": "rule-based thresholds (prototype, requires local calibration)"
+    },
+    "weather": {
+      "source": "local dataset",
+      "temperature_c": 36.0,
+      "humidity_pct": 29.0,
+      "rainfall_mm": 0.0,
+      "rain_probability": 8.0,
+      "forecast": [
+        {
+          "day": "day+1",
+          "temp_max_c": 38.0,
+          "temp_min_c": 24.0,
+          "rainfall_mm": 0.0,
+          "rain_probability": 5.0
+        },
+        {
+          "day": "day+2",
+          "temp_max_c": 39.0,
+          "temp_min_c": 25.0,
+          "rainfall_mm": 0.0,
+          "rain_probability": 6.0
+        },
+        {
+          "day": "day+3",
+          "temp_max_c": 37.0,
+          "temp_min_c": 24.0,
+          "rainfall_mm": 0.0,
+          "rain_probability": 10.0
+        }
+      ],
+      "note": "Bundled offline weather record for a fictional location."
+    },
+    "risk": {
+      "water_stress": {
+        "name": "water_stress",
+        "score": 0.85,
+        "level": "high",
+        "drivers": [
+          "soil moisture low",
+          "no recent rainfall recorded",
+          "low air humidity raises water demand",
+          "flowering stage is water-sensitive",
+          "forecast rain probability low (8.0%)"
+        ]
+      },
+      "heat_stress": {
+        "name": "heat_stress",
+        "score": 0.8,
+        "level": "high",
+        "drivers": [
+          "temperature in heat-stress range",
+          "weather temperature also elevated (36.0\u00b0C)",
+          "flowering is heat-sensitive",
+          "image shows possible heat/scorch signs"
+        ]
+      },
+      "environmental": {
+        "name": "environmental",
+        "score": 0.1,
+        "level": "low",
+        "drivers": [
+          "image flags a possible stress sign"
+        ]
+      },
+      "combined_risk": {
+        "name": "combined_risk",
+        "score": 0.695,
+        "level": "high",
+        "drivers": [
+          "water stress: high",
+          "heat stress: high"
+        ]
+      },
+      "cross_check": {
+        "converging_evidence": [
+          "Water stress is supported by sensor readings + image observations + weather forecast"
+        ],
+        "diverging_evidence": [],
+        "confidence_adjustment": 0.1
+      },
+      "confidence": 0.82,
+      "disclaimer": "Prototype indicator derived from transparent heuristics. Not a validated agronomic model. Requires local calibration and field confirmation."
+    },
+    "notes": []
+  },
+  "recommendation": {
+    "priority": "high",
+    "main_finding": "Combined environmental risk is high at the flowering stage; main contributor(s): water stress (high), heat stress (high).",
+    "recommended_actions": [
+      "Prioritise targeted irrigation within the next 24h; verify soil moisture with a probe at root depth before and after.",
+      "Reduce midday heat load where feasible (irrigation timing, shading/mulch); avoid operations that add plant stress during peak heat."
+    ],
+    "monitoring_actions": [
+      "Re-photograph the same plants in 48-72h under similar light to track the possible sign(s): noticeable yellow/brown discolouration \u2014 potential stress or senescence.",
+      "Track: soil moisture 18.0% is low (<25%).",
+      "Track: temperature 37.0\u00b0C in heat-stress range (>=35\u00b0C).",
+      "Weather (local dataset): rain probability ~8.0%; revisit irrigation plan if this changes."
+    ],
+    "warnings": [
+      "Converging evidence: Water stress is supported by sensor readings + image observations + weather forecast.",
+      "This is decision SUPPORT, not agronomic advice. Figures are prototype indicators and require confirmation by a qualified person on site."
+    ],
+    "confidence": 0.82,
+    "limitations": [
+      "Heuristic rules, not a validated model; thresholds need local calibration.",
+      "Based on modalities: image, sensors, location, text."
+    ],
+    "method": "deterministic template"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "water_stress",
+  "title": "Scenario 2 \u2014 Water stress",
+  "description": "Very dry soil, no recent rain. Water-stress sub-score should dominate.",
+  "text_context": "Soil looks dry, some leaves drooping in the afternoon.",
+  "image": "water_stress.jpg",
+  "sensors": {
+    "temperature_c": 30,
+    "soil_moisture_pct": 12,
+    "air_humidity_pct": 30,
+    "rainfall_mm": 0,
+    "growth_stage": "flowering"
+  },
+  "location": {
+    "label": "Fictional Site Beta",
+    "latitude": 15.1,
+    "longitude": -3.4
+  }
+}

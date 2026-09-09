@@ -1,0 +1,19 @@
+{
+  "id": "heat_stress",
+  "title": "Scenario 3 \u2014 Heat stress",
+  "description": "High air temperature at a heat-sensitive stage.",
+  "text_context": "Heat wave; checking crop condition at midday.",
+  "image": "heat_stress.jpg",
+  "sensors": {
+    "temperature_c": 41,
+    "soil_moisture_pct": 33,
+    "air_humidity_pct": 22,
+    "rainfall_mm": 1,
+    "growth_stage": "flowering"
+  },
+  "location": {
+    "label": "Fictional Site Gamma",
+    "latitude": 16.0,
+    "longitude": -2.9
+  }
+}
