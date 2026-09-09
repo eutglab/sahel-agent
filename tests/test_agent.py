@@ -61,7 +61,8 @@ def test_agent_level3_precomputed_on_reasoning_failure(monkeypatch, multiple_ris
 def test_agent_l1_llm_tool_calling_loop(monkeypatch):
     """With a non-mock LLM, the agent runs the tool-calling loop and can
     re-ask for more tools after seeing results."""
-    import app.core.config as C
+    import types
+
     from app.core.schemas import HealthState, HealthStatus, MaturityStatus
     from app.llm.base import LLMClient, LLMResponse, ToolInvocation
 
@@ -83,8 +84,9 @@ def test_agent_l1_llm_tool_calling_loop(monkeypatch):
         def health_check(self):
             return HealthStatus(component="llm:fake", state=HealthState.READY)
 
-    monkeypatch.setattr(C.settings, "demo_mode", False, raising=False)
-    monkeypatch.setattr(C.settings, "environment", "real", raising=False)
+    # Settings is a frozen dataclass; swap the reference the agent module uses.
+    fake_settings = types.SimpleNamespace(offline_first=False, agent_max_iterations=6)
+    monkeypatch.setattr("app.agent.agent.settings", fake_settings)
 
     ai = AgentInput(
         sensors=SensorReadings(temperature_c=37, soil_moisture_pct=18, growth_stage="flowering"),
