@@ -38,7 +38,7 @@ synthetic data by design · `NOT IMPLEMENTED` = interface/doc only.
 | Check | Result |
 |---|---|
 | `make setup` on a clean clone | works (venv + deps + seed) |
-| `pytest -m "not integration"` | **42 passed** |
+| `pytest -m "not integration"` | **43 passed** |
 | `pytest -m offline` | **passed** (sockets blocked) |
 | `python healthcheck.py` | **STATUS: READY** (0 failed, 0 warnings) |
 | `python scripts/test_integrations.py` | **RESULT: PASS** (0 hard failures) |
