@@ -58,6 +58,46 @@ def test_agent_level3_precomputed_on_reasoning_failure(monkeypatch, multiple_ris
     assert result.degraded
 
 
+def test_agent_l1_llm_tool_calling_loop(monkeypatch):
+    """With a non-mock LLM, the agent runs the tool-calling loop and can
+    re-ask for more tools after seeing results."""
+    import app.core.config as C
+    from app.core.schemas import HealthState, HealthStatus, MaturityStatus
+    from app.llm.base import LLMClient, LLMResponse, ToolInvocation
+
+    class FakeLLM(LLMClient):
+        name = "fake"
+        status = MaturityStatus.INTEGRATION_READY  # -> not is_mock
+
+        def complete(self, s, u, max_tokens=800):
+            return LLMResponse(text="ok")
+
+        def complete_with_tools(self, s, u, tools, tool_results=None, max_tokens=900):
+            if tool_results:  # round 2: now ask for weather
+                return LLMResponse(tool_calls=[ToolInvocation("get_weather", {})])
+            return LLMResponse(tool_calls=[ToolInvocation("analyze_sensor_data", {})])
+
+        def analyze_image(self, b, p):
+            return LLMResponse(text="{}")
+
+        def health_check(self):
+            return HealthStatus(component="llm:fake", state=HealthState.READY)
+
+    monkeypatch.setattr(C.settings, "demo_mode", False, raising=False)
+    monkeypatch.setattr(C.settings, "environment", "real", raising=False)
+
+    ai = AgentInput(
+        sensors=SensorReadings(temperature_c=37, soil_moisture_pct=18, growth_stage="flowering"),
+        location=Location(label="Fictional Site Alpha", latitude=14.5, longitude=-4.2),
+    )
+    result = SahelAgent(llm=FakeLLM()).analyze(ai)
+    assert result.reasoning_mode == "llm_tool_calling"
+    assert "analyze_sensor_data" in result.tools_used
+    assert "get_weather" in result.tools_used          # added on the re-ask round
+    assert "generate_recommendation" in result.tools_used
+    assert any("round 2" in ln for ln in result.trace.as_lines())
+
+
 def test_agent_continues_without_vision_on_bad_image():
     ai = AgentInput(
         image_bytes=b"this is not an image",
