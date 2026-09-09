@@ -7,7 +7,7 @@ across modalities (sensors + vision + weather) and flags contradictions.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from app.tools.sensors.rules import load_thresholds
 from app.tools.risk.schema import CrossCheck, RiskInput, RiskOutput, SubScore
@@ -141,18 +141,27 @@ def _cross_check(inp: RiskInput, water: SubScore, heat: SubScore) -> CrossCheck:
     diverging: List[str] = []
     adj = 0.0
 
-    has_sensor_water = any("soil moisture" in d for d in water.drivers)
-    has_vision_water = inp.vision and any(
+    has_sensors = inp.sensors is not None
+    has_vision = inp.vision is not None
+    has_weather = inp.weather is not None
+
+    has_sensor_water = has_sensors and any("soil moisture" in d for d in water.drivers)
+    has_vision_water = has_vision and any(
         k in " ".join(inp.vision.get("possible_signs", [])).lower()
         for k in ("wilt", "curl", "dry", "water", "yellow")
     )
-    has_weather_dry = inp.weather and isinstance(inp.weather.get("rain_probability"), (int, float)) \
+    has_weather_dry = (
+        has_weather
+        and isinstance(inp.weather.get("rain_probability"), (int, float))
         and inp.weather["rain_probability"] <= 20
+    )
 
+    # Converging evidence only counts when >= 2 DISTINCT modalities agree AND the
+    # water sub-score is at least 'moderate' (don't oversell a 'low' score).
     water_signals = sum([bool(has_sensor_water), bool(has_vision_water), bool(has_weather_dry)])
-    if water_signals >= 2:
+    if water_signals >= 2 and water.score >= 0.33:
         converging.append(
-            "Water stress is supported by "
+            "Water-stress signal supported by "
             + " + ".join(
                 s for s, ok in [
                     ("sensor readings", has_sensor_water),
@@ -163,13 +172,22 @@ def _cross_check(inp: RiskInput, water: SubScore, heat: SubScore) -> CrossCheck:
         )
         adj += 0.1
 
-    # Contradiction: vision says healthy but sensors say stressed (or vice versa).
-    if inp.vision and not inp.vision.get("possible_signs") and (water.score > 0.5 or heat.score > 0.5):
-        diverging.append("Image shows no visible stress signs, but sensor readings indicate elevated risk.")
-        adj -= 0.1
-    if inp.vision and inp.vision.get("possible_signs") and water.score < 0.2 and heat.score < 0.2:
-        diverging.append("Image flags possible stress signs, but sensor readings look within range.")
-        adj -= 0.05
+    # Contradiction: image and sensors disagree. Only assert something about
+    # sensor readings when sensor data actually exists.
+    if has_sensors and has_vision:
+        img_flags = bool(inp.vision.get("possible_signs"))
+        sensors_stressed = water.score > 0.5 or heat.score > 0.5
+        sensors_calm = water.score < 0.2 and heat.score < 0.2
+        if not img_flags and sensors_stressed:
+            diverging.append(
+                "Image shows no visible stress signs, but sensor readings indicate elevated risk."
+            )
+            adj -= 0.15
+        if img_flags and sensors_calm:
+            diverging.append(
+                "Image flags possible stress signs, but sensor readings are within range."
+            )
+            adj -= 0.12
 
     return CrossCheck(
         converging_evidence=converging,
@@ -188,6 +206,21 @@ def calculate(inp: RiskInput) -> Dict[str, Any]:
     water = _water_stress(inp)
     heat = _heat_stress(inp)
     env = _environmental(inp)
+
+    n_modalities = sum(bool(x) for x in (inp.sensors, inp.vision, inp.weather))
+
+    # No observation at all -> do not report a reassuring "low"; report "unknown".
+    if n_modalities == 0:
+        unknown = SubScore(
+            name="combined_risk", score=0.0, level="unknown",
+            drivers=["no sensor, image or weather evidence was available"],
+        )
+        return RiskOutput(
+            water_stress=water, heat_stress=heat, environmental=env,
+            combined_risk=unknown,
+            cross_check=CrossCheck(),
+            confidence=0.1,
+        ).model_dump()
 
     combined_score = _clamp(
         water.score * th["water_stress"]
@@ -211,7 +244,12 @@ def calculate(inp: RiskInput) -> Dict[str, Any]:
         drivers=combined_drivers,
     )
 
-    confidence = _clamp(_base_confidence(inp) + xc.confidence_adjustment)
+    confidence = _base_confidence(inp) + xc.confidence_adjustment
+    if xc.diverging_evidence:
+        # A genuine contradiction must always lower confidence, even if some
+        # other evidence converges. Cap it so the agent cannot look certain.
+        confidence = min(confidence, _base_confidence(inp) - 0.15, 0.55)
+    confidence = _clamp(confidence)
 
     return RiskOutput(
         water_stress=water,

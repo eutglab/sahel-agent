@@ -165,4 +165,6 @@ class AgentResult(BaseModel):
     def situation_line(self) -> str:
         risk = (self.observation.risk or {}).get("combined_risk", {})
         level = risk.get("level", "unknown")
+        if level == "unknown":
+            return "Insufficient evidence to estimate environmental risk"
         return f"Overall environmental risk: {level.upper()}"

@@ -87,8 +87,26 @@ def synthesize(payload: RecommendationInput) -> Dict[str, Any]:
 
     priority = {"high": "high", "moderate": "medium", "low": "low", "unknown": "low"}[combined]
 
+    xc_div = (risk.get("cross_check", {}) or {}).get("diverging_evidence", [])
+    if combined == "unknown":
+        priority = "low"
+    elif xc_div and priority == "low":
+        # Contradictory signals -> don't let a 'low' combined score read as "all clear".
+        priority = "medium"
+
     confidence = float(risk.get("confidence", 0.4))
     main_finding = _main_finding(combined, water, heat, env, payload)
+    if combined == "unknown":
+        main_finding = (
+            "Insufficient evidence to estimate environmental risk: no sensor, image "
+            "or weather data was usable. Provide at least sensor readings or an image."
+        )
+    elif xc_div:
+        main_finding = (
+            main_finding
+            + " Sources do not fully converge (" + xc_div[0].rstrip(".")
+            + ") — treat this result as provisional and confirm on site."
+        )
 
     warnings.append(
         "This is decision SUPPORT, not agronomic advice. Figures are prototype "
