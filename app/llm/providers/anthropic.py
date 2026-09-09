@@ -29,7 +29,7 @@ class AnthropicLLMClient(LLMClient):
         if not self._key:
             raise ProviderUnavailable("ANTHROPIC_API_KEY not set")
         try:
-            import anthropic
+            import anthropic  # noqa: F401
         except ImportError as exc:
             raise ProviderUnavailable("`pip install anthropic` to use this provider") from exc
         return anthropic.Anthropic(api_key=self._key)
@@ -116,9 +116,9 @@ class AnthropicLLMClient(LLMClient):
                 detail="ANTHROPIC_API_KEY not set (INTEGRATION_READY)",
                 provider=self.name,
             )
-        try:
-            import anthropic  # noqa: F401
-        except ImportError:
+        import importlib.util
+
+        if importlib.util.find_spec("anthropic") is None:
             return HealthStatus(
                 component="llm:anthropic",
                 state=HealthState.WARNING,

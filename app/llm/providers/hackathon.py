@@ -9,7 +9,7 @@ from __future__ import annotations
 from app.core.config import settings
 from app.core.errors import NotIntegratedError
 from app.core.schemas import HealthState, HealthStatus, MaturityStatus
-from app.llm.base import LLMResponse
+
 from app.llm.providers.openai import OpenAILLMClient
 
 

@@ -15,7 +15,6 @@ from typing import Any, Dict, List, Optional, Type
 from pydantic import BaseModel, ValidationError
 
 from app.core.errors import (
-    FallbackExhausted,
     NotIntegratedError,
     ProviderError,
     ToolInputError,
