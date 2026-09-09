@@ -10,7 +10,7 @@ AgentTrace and one JSON row is written per run (Run Details / benchmark).
 from __future__ import annotations
 
 import time
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from app.agent.planner import plan_notes, plan_tools
 from app.agent.prompts import SYSTEM_PROMPT, build_user_context
@@ -154,7 +154,22 @@ class SahelAgent:
             )
             new = [n for n in wanted if n in _OBSERVATION_TOOLS and n not in records]
             if not new:
-                if i == 0:
+                if i == 0 and not records:
+                    # The LLM gave us nothing usable but modalities ARE present.
+                    # Don't throw away available data — fall back to the
+                    # deterministic plan for the observation tools.
+                    fallback_plan = [
+                        n for n in plan_tools(agent_input, usable)
+                        if n in _OBSERVATION_TOOLS
+                    ]
+                    if fallback_plan:
+                        trace.event(
+                            "LLM selected no valid tools — using rule-based selection",
+                            "warn", ", ".join(fallback_plan),
+                        )
+                        for name in fallback_plan:
+                            self._run_one(name, agent_input, records, trace)
+                elif i == 0:
                     trace.event("LLM requested no observation tools", "warn")
                 break
             trace.event(
