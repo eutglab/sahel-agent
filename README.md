@@ -92,7 +92,7 @@ Full detail: [`docs/architecture.md`](docs/architecture.md).
 - 3-level graceful degradation; **offline-first** by default
 - `healthcheck.py` + `scripts/test_integrations.py` pre-flight checks
 - 5 demo scenarios + one-click "Load Demo Scenario"
-- 43 automated tests incl. an offline suite that blocks all sockets
+- 53 automated tests incl. an offline suite that blocks all sockets
 
 ## Tools
 
@@ -172,14 +172,14 @@ print(result.recommendation["priority"], result.recommendation["main_finding"])
 ## Testing
 
 ```bash
-make test              # pytest -m "not integration"   (43 tests)
+make test              # pytest -m "not integration"   (53 tests)
 pytest -m offline      # offline guarantee (sockets blocked)
 python healthcheck.py
 python scripts/test_integrations.py
 python benchmark/run_benchmark.py
 ```
 
-[`docs/testing.md`](docs/testing.md) · [`docs/benchmark.md`](docs/benchmark.md).
+[`docs/testing.md`](docs/testing.md) · [`docs/benchmark.md`](docs/benchmark.md) · [`docs/ai_transparency.md`](docs/ai_transparency.md) · [`docs/final_scorecard.md`](docs/final_scorecard.md) · [`docs/top_10_risks.md`](docs/top_10_risks.md) · [`docs/final_demo_script.md`](docs/final_demo_script.md)
 
 ## Limitations
 
