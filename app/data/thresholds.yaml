@@ -1,0 +1,51 @@
+# -----------------------------------------------------------------------------
+# SAHEL Agent — configurable sensor thresholds (PROTOTYPE heuristics).
+#
+# These values are INDICATIVE ranges for a generic annual field crop. They are
+# NOT an agronomic standard and REQUIRE local calibration and field validation.
+# Edit freely; the sensor tool reloads this file on every run.
+# -----------------------------------------------------------------------------
+
+soil_moisture_pct:
+  # Volumetric-style percentage. Lower = drier.
+  critical_low: 15
+  low: 25
+  optimal_min: 30
+  optimal_max: 70
+  high: 85
+  # Growth stages that are especially sensitive to low soil moisture.
+  sensitive_stages: [flowering, fruiting]
+
+temperature_c:
+  cold_stress: 10
+  low: 15
+  optimal_min: 18
+  optimal_max: 30
+  heat_stress: 35
+  severe_heat: 40
+
+air_humidity_pct:
+  very_low: 25
+  low: 35
+  optimal_min: 40
+  optimal_max: 80
+  high: 90
+
+rainfall_mm:
+  # Rainfall observed over the recent reporting window (e.g. last 24h).
+  none: 0
+  light: 2
+  moderate: 10
+  heavy: 30
+
+# Weighting used when combining sub-scores into a single indicator (0..1).
+risk_weights:
+  water_stress: 0.40
+  heat_stress: 0.35
+  environmental: 0.25
+
+risk_bands:
+  low: 0.33
+  moderate: 0.66
+  # >= high_threshold -> "high"
+  high_threshold: 0.66
