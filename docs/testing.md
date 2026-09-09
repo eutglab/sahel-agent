@@ -1,7 +1,7 @@
 # Testing strategy
 
 ```bash
-make test            # pytest -m "not integration"   → 43 tests, ~0.5 s
+make test            # pytest -m "not integration"   → 53 tests, ~0.5 s
 pytest -m offline    # offline guarantee subset (sockets blocked)
 pytest               # everything; integration tests self-skip if unconfigured
 ```
@@ -18,6 +18,7 @@ pytest               # everything; integration tests self-skip if unconfigured
 | `test_agent.py` | full pipeline on `multiple_risks` (→ high), skips weather/vision when absent, planner is modality-driven, trace populated, **L3 precomputed fallback** on reasoning failure, deterministic fallback without a scenario |
 | `test_external_adapter.py` | `register_external_tool` discoverable + callable + in `describe_for_llm`, handler exception captured not raised |
 | `test_security.py` | image magic-byte sniff, size cap, unknown-format reject, secret scrubbing, text sanitisation |
+| `test_adversarial.py` | red-team scenarios A–F: no fabricated modalities, contradiction detection + confidence drop, implausible-value rejection, no-evidence→unknown, scenario\_id path-traversal |
 | `test_offline.py` *(marker: `offline`)* | all 5 demo scenarios run with **every socket blocked**; weather uses local/mock; LLM client is mock; `healthcheck.main()` exits 0 offline |
 
 ## Offline guarantee
