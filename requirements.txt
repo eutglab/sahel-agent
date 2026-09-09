@@ -1,0 +1,17 @@
+# SAHEL Agent — runtime dependencies
+# Every dependency has a reason. No heavy infra.
+
+streamlit>=1.30        # UI (single page, zero frontend build)
+pydantic>=2.5          # strict tool input/output contracts (anti-hallucination)
+pyyaml>=6.0            # configurable sensor thresholds + defaults
+pillow>=10.0           # local image heuristic (no ML model)
+numpy>=1.24            # pixel math for the local vision heuristic
+pandas>=2.0            # benchmark tables + run history views
+requests>=2.31         # Open-Meteo weather provider (keyless, free)
+
+# --- optional, only used when a real LLM provider is enabled ---
+# anthropic>=0.40      # AnthropicLLMClient (real reasoning + vision)
+# openai>=1.30         # OpenAILLMClient (alternative provider)
+
+# --- dev / test ---
+pytest>=7.4

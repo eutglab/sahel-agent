@@ -1,0 +1,38 @@
+# Secrets & environment
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+build/
+dist/
+
+# Data / runtime
+*.sqlite3
+*.db
+data/runs.sqlite3
+logs/
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Uploaded user images (never committed)
+demo_data/uploads/
