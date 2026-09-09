@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from app.core.config import PROJECT_ROOT
+
+_SAFE_ID = re.compile(r"[^A-Za-z0-9_-]")
 
 DEMO_DIR = PROJECT_ROOT / "demo_data"
 SCENARIO_DIR = DEMO_DIR / "scenarios"
@@ -62,7 +65,11 @@ def local_weather(label: Optional[str]) -> Optional[Dict[str, Any]]:
 
 
 def precomputed_result(scenario_id: str) -> Optional[Dict[str, Any]]:
-    path = PRECOMPUTED_DIR / f"{scenario_id}.json"
-    if not path.exists():
+    # Harden against path traversal: the id is only ever a bare slug.
+    safe_id = _SAFE_ID.sub("", scenario_id or "")
+    if not safe_id:
+        return None
+    path = PRECOMPUTED_DIR / f"{safe_id}.json"
+    if not path.exists() or path.parent != PRECOMPUTED_DIR:
         return None
     return _read_json(path)
