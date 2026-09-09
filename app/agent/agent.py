@@ -69,15 +69,14 @@ class SahelAgent:
         try:
             if use_llm:
                 trace.event("Selecting tools with LLM", "ok", f"provider: {self.llm.name}")
-                planned = self._llm_select(agent_input, usable, trace)
-                if not planned:
-                    raise RuntimeError("LLM selected no runnable tools")
+                records = self._llm_loop(agent_input, usable, trace)
+                if not any(r.success for r in records.values()):
+                    raise RuntimeError("LLM path produced no successful tool call")
             else:
                 why = "offline/demo mode" if settings.offline_first else "no real LLM provider"
                 trace.event("Selecting tools with rule-based planner", "ok", why)
                 planned = plan_tools(agent_input, usable)
-
-            records = self._run_pipeline(planned, agent_input, trace)
+                records = self._run_pipeline(planned, agent_input, trace)
         except Exception as exc:  # noqa: BLE001 - fall to Level 3 / partial result
             degraded = True
             errors.append(f"reasoning path failed: {exc}")
@@ -130,38 +129,66 @@ class SahelAgent:
         return result
 
     # ------------------------------------------------------------------ #
-    def _llm_select(self, agent_input: AgentInput, usable: List[str], trace: AgentTrace) -> List[str]:
+    def _llm_loop(
+        self, agent_input: AgentInput, usable: List[str], trace: AgentTrace
+    ) -> Dict[str, ToolCallRecord]:
+        """L1: let the model pick observation tools, run them, and re-ask with
+        the results up to AGENT_MAX_ITERATIONS times before the backbone runs."""
         specs = [
             ToolSpec(name=s["name"], description=s["description"], input_schema=s["input_schema"])
             for s in self.registry.describe_for_llm(only=usable)
         ]
         user = build_user_context(agent_input)
-        resp = self.llm.complete_with_tools(SYSTEM_PROMPT, user, specs, max_tokens=700)
+        records: Dict[str, ToolCallRecord] = {}
+        tool_results: List[Dict[str, Any]] = []
 
-        requested = [c.name for c in resp.tool_calls if c.name in usable]
-        # Keep only observation tools the modality actually supports.
+        max_iters = max(1, settings.agent_max_iterations)
+        for i in range(max_iters):
+            resp = self.llm.complete_with_tools(
+                SYSTEM_PROMPT, user, specs,
+                tool_results=tool_results or None,
+                max_tokens=700,
+            )
+            wanted = self._applicable(
+                [c.name for c in resp.tool_calls], agent_input, usable, trace
+            )
+            new = [n for n in wanted if n in _OBSERVATION_TOOLS and n not in records]
+            if not new:
+                if i == 0:
+                    trace.event("LLM requested no observation tools", "warn")
+                break
+            trace.event(
+                f"LLM tool plan (round {i + 1})", "ok", ", ".join(new)
+            )
+            for name in new:
+                self._run_one(name, agent_input, records, trace)
+                rec = records.get(name)
+                if rec:
+                    tool_results.append(
+                        {"tool": name, "success": rec.success, "output": rec.output, "error": rec.error}
+                    )
+
+        # Backbone always runs (enforced again by the caller as a safety net).
+        for name in _BACKBONE_TOOLS:
+            if name in usable and name not in records:
+                self._run_one(name, agent_input, records, trace)
+        return records
+
+    def _applicable(
+        self, requested: List[str], agent_input: AgentInput, usable: List[str], trace: AgentTrace
+    ) -> List[str]:
         mods = set(agent_input.available_modalities())
-        applicable = []
+        need = {"analyze_image": "image", "analyze_sensor_data": "sensors", "get_weather": "location"}
+        out: List[str] = []
         for name in requested:
-            if name == "analyze_image" and "image" not in mods:
-                trace.event("LLM asked for analyze_image but no image present — skipped", "warn")
+            if name not in usable:
                 continue
-            if name == "analyze_sensor_data" and "sensors" not in mods:
-                trace.event("LLM asked for analyze_sensor_data but no sensors present — skipped", "warn")
+            if name in need and need[name] not in mods:
+                trace.event(f"LLM asked for {name} but no {need[name]} present — skipped", "warn")
                 continue
-            if name == "get_weather" and "location" not in mods:
-                trace.event("LLM asked for get_weather but no location present — skipped", "warn")
-                continue
-            applicable.append(name)
-
-        # Order: observation tools first, backbone last.
-        ordered = [n for n in _OBSERVATION_TOOLS if n in applicable]
-        ordered += [n for n in _BACKBONE_TOOLS if n in applicable or n in usable]
-        # de-dup, preserve order
-        seen = set()
-        final = [n for n in ordered if not (n in seen or seen.add(n))]
-        trace.event("LLM tool plan", "ok", ", ".join(final) or "(none)")
-        return final
+            if name not in out:
+                out.append(name)
+        return out
 
     # ------------------------------------------------------------------ #
     def _run_pipeline(
