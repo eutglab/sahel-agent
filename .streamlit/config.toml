@@ -1,0 +1,8 @@
+# Sane default so the app doesn't inherit a random dark/light preference from
+# the browser before the in-app toggle (top-right, next to the language
+# switcher) takes over. The toggle overrides this at runtime via injected CSS.
+[theme]
+base = "light"
+
+[server]
+headless = true

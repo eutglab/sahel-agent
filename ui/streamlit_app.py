@@ -24,23 +24,40 @@ from app.data.demo_data import get_scenario, list_scenarios, load_scenario_image
 
 st.set_page_config(page_title="SAHEL Agent", page_icon="🌍", layout="wide")
 
-_CSS = """
-<style>
-.block-container {padding-top: 2rem; max-width: 1150px;}
-h1, h2, h3 {letter-spacing: -0.01em;}
-.sahel-sub {color: #6b7280; font-size: 0.95rem; margin-top: -0.6rem;}
-.trace-line {font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.86rem; padding: 1px 0;}
-.badge {display:inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.74rem;
-        font-weight: 600; margin-right: 6px;}
-.badge-low {background:#dcfce7; color:#166534;}
-.badge-moderate {background:#fef9c3; color:#854d0e;}
-.badge-medium {background:#fef9c3; color:#854d0e;}
-.badge-high {background:#fee2e2; color:#991b1b;}
-.badge-unknown {background:#e5e7eb; color:#374151;}
-.small {color:#6b7280; font-size:0.82rem;}
-</style>
-"""
-st.markdown(_CSS, unsafe_allow_html=True)
+
+def _css(theme: str) -> str:
+    """Force a consistent light/dark look regardless of the browser's own
+    Streamlit theme setting — driven by the toggle button, not guessed."""
+    if theme == "dark":
+        bg, bg2, text, sub, border = "#0e1117", "#1a1d24", "#e5e7eb", "#9ca3af", "#30343c"
+    else:
+        bg, bg2, text, sub, border = "#ffffff", "#f8fafc", "#111827", "#6b7280", "#e5e7eb"
+    return f"""
+    <style>
+    :root {{ --background-color: {bg}; --secondary-background-color: {bg2}; --text-color: {text}; }}
+    .stApp {{ background-color: {bg} !important; color: {text} !important; }}
+    [data-testid="stSidebar"] {{ background-color: {bg2} !important; }}
+    [data-testid="stHeader"] {{ background-color: transparent !important; }}
+    .stApp, .stApp p, .stApp label, .stApp span, .stApp li {{ color: {text}; }}
+    .block-container {{padding-top: 2rem; max-width: 1150px;}}
+    h1, h2, h3 {{letter-spacing: -0.01em;}}
+    .sahel-sub {{color: {sub} !important; font-size: 0.95rem; margin-top: -0.6rem;}}
+    .trace-line {{font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.86rem; padding: 1px 0;}}
+    .badge {{display:inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.74rem;
+            font-weight: 600; margin-right: 6px;}}
+    .badge-low {{background:#dcfce7; color:#166534;}}
+    .badge-moderate {{background:#fef9c3; color:#854d0e;}}
+    .badge-medium {{background:#fef9c3; color:#854d0e;}}
+    .badge-high {{background:#fee2e2; color:#991b1b;}}
+    .badge-unknown {{background:#e5e7eb; color:#374151;}}
+    .small {{color: {sub} !important; font-size:0.82rem;}}
+    hr {{border-color: {border} !important;}}
+    </style>
+    """
+
+
+st.session_state.setdefault("theme", "light")
+st.markdown(_css(st.session_state["theme"]), unsafe_allow_html=True)
 
 # --- DEMO_JUDGE_MODE: preload the strongest scenario once, zero clicks to set up.
 # Judges always see English regardless of any language previously picked in this
@@ -55,9 +72,14 @@ if settings.demo_judge_mode and "_judge_init" not in st.session_state:
 
 st.session_state.setdefault("lang", "en")
 
-# --- Language switcher — top-right corner. ----------------------------------
-_bar_l, _bar_r = st.columns([5, 1])
-with _bar_r:
+# --- Theme + language switcher — top-right corner. ---------------------------
+_bar_l, _bar_theme, _bar_lang = st.columns([5, 1, 1])
+with _bar_theme:
+    _is_dark = st.session_state["theme"] == "dark"
+    if st.button("☀️ Light" if _is_dark else "🌙 Dark", width="stretch", key="_theme_toggle"):
+        st.session_state["theme"] = "light" if _is_dark else "dark"
+        st.rerun()
+with _bar_lang:
     _codes = list(LANGUAGES)
     _picked = st.selectbox(
         "Language", _codes, index=_codes.index(st.session_state["lang"]),

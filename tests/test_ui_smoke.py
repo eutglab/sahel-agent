@@ -29,6 +29,16 @@ def test_app_language_switch_does_not_crash():
         assert not at.exception
 
 
+def test_app_theme_toggle_does_not_crash():
+    at = AppTest.from_file(APP_PATH, default_timeout=30)
+    at.run()
+    assert not at.exception
+    toggle = next((b for b in at.button if "Dark" in b.label or "Light" in b.label), None)
+    assert toggle is not None
+    toggle.click().run()
+    assert not at.exception
+
+
 def test_app_demo_scenario_end_to_end():
     at = AppTest.from_file(APP_PATH, default_timeout=30)
     at.run()
