@@ -122,6 +122,20 @@ def synthesize(payload: RecommendationInput) -> Dict[str, Any]:
             "Missing sensor inputs: " + ", ".join(payload.sensors["missing_fields"]) + "."
         )
 
+    evidence = (payload.evidence or {}).get("results") or []
+    evidence_source = (payload.evidence or {}).get("source", "")
+    if evidence:
+        if evidence_source == "exa":
+            actions.append(
+                "Cross-check the situation against the retrieved advisory sources "
+                "(Evidence section) before acting."
+            )
+        else:
+            limitations.append(
+                "Evidence section shows offline sample sources, not live search results "
+                "(set EXA_API_KEY for real citations)."
+            )
+
     return RecommendationOutput(
         priority=priority,
         main_finding=main_finding,
@@ -130,6 +144,8 @@ def synthesize(payload: RecommendationInput) -> Dict[str, Any]:
         warnings=warnings,
         confidence=round(confidence, 2),
         limitations=limitations,
+        evidence=evidence,
+        evidence_source=evidence_source,
         method="deterministic template",
     ).model_dump()
 

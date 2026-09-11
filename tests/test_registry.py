@@ -26,7 +26,11 @@ def test_describe_for_llm_only_exposes_usable(registry):
     specs = registry.describe_for_llm()
     names = {s["name"] for s in specs}
     # INTEGRATION_READY stubs must not be advertised to the LLM.
-    assert "search_web" not in names
+    assert "analyze_file" not in names
+    assert "send_notification" not in names
+    # search_web graduated to IMPLEMENTED (Exa-backed) — it is advertised,
+    # though the agent only ever triggers it itself once risk is elevated.
+    assert "search_web" in names
     assert "analyze_sensor_data" in names
     for s in specs:
         assert {"name", "description", "input_schema"} <= set(s)

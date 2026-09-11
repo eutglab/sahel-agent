@@ -35,7 +35,15 @@ from app.tools.registry import ToolRegistry, get_registry
 logger = get_logger("sahel.agent")
 
 _OBSERVATION_TOOLS = ["analyze_image", "analyze_sensor_data", "get_weather"]
-_BACKBONE_TOOLS = ["calculate_risk", "generate_recommendation"]
+# web_search runs between risk and recommendation: it needs the risk level to
+# decide whether grounding evidence is worth fetching, and its results feed
+# the recommendation. It self-skips (returns no input) when risk is low/unknown.
+_BACKBONE_TOOLS = ["calculate_risk", "search_web", "generate_recommendation"]
+_EVIDENCE_TOPICS = {
+    "water_stress": "irrigation and water stress management advisory",
+    "heat_stress": "heat stress crop management advisory",
+    "environmental": "crop disease and pest advisory",
+}
 
 
 class SahelAgent:
@@ -257,10 +265,35 @@ class SahelAgent:
             return {"label": loc.label, "latitude": loc.latitude, "longitude": loc.longitude}
         if name == "calculate_risk":
             return risk_input_from_records(agent_input, records)
+        if name == "search_web":
+            return self._evidence_query(agent_input, records)
         if name == "generate_recommendation":
             return recommendation_input_from_records(agent_input, records)
         # external / unknown tools: pass a permissive dict
         return {}
+
+    def _evidence_query(self, agent_input: AgentInput, records: Dict[str, ToolCallRecord]):
+        """Only search when there is something specific to ground: a
+        moderate/high risk driver. Returns None to skip the call entirely
+        (no network, faster demo) when risk is low/unknown."""
+        risk_rec = records.get("calculate_risk")
+        risk = risk_rec.output if (risk_rec and risk_rec.success) else None
+        if not risk:
+            return None
+        combined = (risk.get("combined_risk") or {}).get("level")
+        if combined not in {"moderate", "high"}:
+            return None
+
+        driver = next(
+            (key for key in ("heat_stress", "water_stress", "environmental")
+             if (risk.get(key) or {}).get("level") in {"moderate", "high"}),
+            None,
+        )
+        topic = _EVIDENCE_TOPICS.get(driver, "crop stress management advisory")
+        stage = agent_input.sensors.growth_stage.value
+        loc = agent_input.location.label or "Sahel region smallholder farm"
+        query = f"{topic} {stage} stage {loc}".strip()
+        return {"query": query, "max_results": 4}
 
     # ------------------------------------------------------------------ #
     def _level3_precomputed(self, agent_input: AgentInput, trace: AgentTrace) -> Optional[AgentResult]:

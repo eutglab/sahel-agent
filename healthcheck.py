@@ -92,7 +92,6 @@ def main() -> int:
     print("-" * 52)
     print("Optional integrations:")
     optional = {
-        "web_search": "search_web",
         "file_analysis": "analyze_file",
         "notification": "send_notification",
     }

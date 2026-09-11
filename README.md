@@ -92,7 +92,8 @@ Full detail: [`docs/architecture.md`](docs/architecture.md).
 - 3-level graceful degradation; **offline-first** by default
 - `healthcheck.py` + `scripts/test_integrations.py` pre-flight checks
 - 5 demo scenarios + one-click "Load Demo Scenario"
-- 53 automated tests incl. an offline suite that blocks all sockets
+- EN / FR / Bambara language switcher for the UI chrome ([`docs/i18n.md`](docs/i18n.md) — scope disclosed honestly)
+- 61 automated tests incl. an offline suite that blocks all sockets
 
 ## Tools
 
@@ -103,7 +104,8 @@ Full detail: [`docs/architecture.md`](docs/architecture.md).
 | `get_weather` | current + short forecast | **Open-Meteo** (free, keyless) | local dataset / synthetic | IMPLEMENTED |
 | `calculate_risk` | water / heat / environmental / combined + cross-check | — (heuristic) | heuristic | IMPLEMENTED |
 | `generate_recommendation` | prioritised actions, monitoring, warnings | LLM (grounded) | deterministic template | IMPLEMENTED |
-| `search_web`, `analyze_file`, `send_notification` | — | — | raise `NotIntegratedError` | INTEGRATION_READY (disabled) |
+| `search_web` | grounds an elevated risk finding in live evidence, with citations | **Exa** | offline sample sources | IMPLEMENTED |
+| `analyze_file`, `send_notification` | — | — | raise `NotIntegratedError` | INTEGRATION_READY (disabled) |
 | geospatial / satellite / IoT / voice | — | — | — | FUTURE (interface only) |
 
 Details: [`docs/tools.md`](docs/tools.md), [`docs/providers.md`](docs/providers.md).
@@ -135,6 +137,7 @@ Key switches:
 | `DEMO_MODE` | `true` | prefer local/mock providers, no keys |
 | `LLM_PROVIDER` | `mock` | `mock` / `anthropic` / `openai` / `hackathon` |
 | `WEATHER_PROVIDER` | `local` | `open_meteo` / `local` / `mock` / `hackathon` |
+| `WEB_SEARCH_PROVIDER` | `exa` | `exa` / `mock`; needs `EXA_API_KEY` for live evidence |
 | `*_FALLBACK_CHAIN` | see file | ordered provider fallback per capability |
 
 Secrets go in `.env` only (gitignored). Never in code. See [`SECURITY.md`](SECURITY.md).
@@ -172,7 +175,7 @@ print(result.recommendation["priority"], result.recommendation["main_finding"])
 ## Testing
 
 ```bash
-make test              # pytest -m "not integration"   (53 tests)
+make test              # pytest -m "not integration"   (61 tests)
 pytest -m offline      # offline guarantee (sockets blocked)
 python healthcheck.py
 python scripts/test_integrations.py

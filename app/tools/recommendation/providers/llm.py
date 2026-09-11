@@ -55,7 +55,8 @@ class LLMRecommendationProvider(BaseProvider):
         base = synthesize(payload)
         for key in ("priority", "main_finding", "confidence"):
             data.setdefault(key, base[key])
-        for key in ("recommended_actions", "monitoring_actions", "warnings", "limitations"):
+        for key in ("recommended_actions", "monitoring_actions", "warnings", "limitations",
+                    "evidence", "evidence_source"):
             data.setdefault(key, base[key])
         data["method"] = f"llm synthesis ({client.name}), grounded on structured tool outputs"
         return RecommendationOutput.model_validate(data).model_dump()

@@ -20,6 +20,7 @@ _SECRET_KEYS = {
     "HACKATHON_LLM_API_KEY",
     "HACKATHON_WEATHER_API_KEY",
     "WEB_SEARCH_API_KEY",
+    "EXA_API_KEY",
 }
 
 
@@ -109,6 +110,11 @@ class Settings:
         default_factory=lambda: _get_list("RECOMMENDATION_FALLBACK_CHAIN", "llm,template")
     )
 
+    web_search_provider: str = field(default_factory=lambda: _get("WEB_SEARCH_PROVIDER", "exa").lower())
+    web_search_fallback_chain: List[str] = field(
+        default_factory=lambda: _get_list("WEB_SEARCH_FALLBACK_CHAIN", "exa,mock")
+    )
+
     max_upload_mb: int = field(default_factory=lambda: _get_int("MAX_UPLOAD_MB", 8))
     tool_timeout_seconds: int = field(default_factory=lambda: _get_int("TOOL_TIMEOUT_SECONDS", 12))
     agent_max_iterations: int = field(default_factory=lambda: _get_int("AGENT_MAX_ITERATIONS", 6))
@@ -124,6 +130,7 @@ class Settings:
             "weather": True,
             "risk": True,
             "recommendation": True,
+            "web_search": True,
         }
         default = core_defaults.get(tool_name, False)
         return _get_bool(f"TOOL_{tool_name.upper()}_ENABLED", default)
@@ -143,8 +150,10 @@ class Settings:
             "weather_provider": self.weather_provider,
             "vision_provider": self.vision_provider,
             "recommendation_provider": self.recommendation_provider,
+            "web_search_provider": self.web_search_provider,
             "anthropic_key": redact(get_secret("ANTHROPIC_API_KEY")),
             "openai_key": redact(get_secret("OPENAI_API_KEY")),
+            "exa_key": redact(get_secret("EXA_API_KEY") or get_secret("WEB_SEARCH_API_KEY")),
             "agent_max_iterations": self.agent_max_iterations,
             "tool_timeout_seconds": self.tool_timeout_seconds,
         }

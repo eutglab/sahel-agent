@@ -55,6 +55,7 @@ def recommendation_input_from_records(agent_input: AgentInput, records: Dict[str
         "vision": out("analyze_image"),
         "weather": out("get_weather"),
         "risk": out("calculate_risk"),
+        "evidence": out("search_web"),
         "growth_stage": agent_input.sensors.growth_stage.value,
         "modalities": agent_input.available_modalities(),
     }

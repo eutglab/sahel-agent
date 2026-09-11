@@ -17,6 +17,7 @@ if str(ROOT) not in sys.path:
 
 from app.agent.agent import SahelAgent  # noqa: E402
 from app.core.config import settings  # noqa: E402
+from app.core.i18n import LANGUAGES, PARTIAL_NOTICE, t  # noqa: E402
 from app.core.schemas import AgentInput, GrowthStage, Location, SensorReadings  # noqa: E402
 from app.core.security import validate_image_upload  # noqa: E402
 from app.data.demo_data import get_scenario, list_scenarios, load_scenario_image  # noqa: E402
@@ -42,47 +43,72 @@ h1, h2, h3 {letter-spacing: -0.01em;}
 st.markdown(_CSS, unsafe_allow_html=True)
 
 # --- DEMO_JUDGE_MODE: preload the strongest scenario once, zero clicks to set up.
+# Judges always see English regardless of any language previously picked in this
+# session — the product's default, judged language is English (see PARTIAL_NOTICE
+# for the disclosed scope of French/Bambara support).
 if settings.demo_judge_mode and "_judge_init" not in st.session_state:
     _scn = get_scenario(settings.demo_judge_scenario) or (list_scenarios() or [None])[0]
     if _scn:
         st.session_state["loaded"] = _scn
     st.session_state["_judge_init"] = True
+    st.session_state["lang"] = "en"
+
+st.session_state.setdefault("lang", "en")
+
+# --- Language switcher — top-right corner. ----------------------------------
+_bar_l, _bar_r = st.columns([5, 1])
+with _bar_r:
+    _codes = list(LANGUAGES)
+    _picked = st.selectbox(
+        "Language", _codes, index=_codes.index(st.session_state["lang"]),
+        format_func=lambda c: LANGUAGES[c], label_visibility="collapsed", key="_lang_picker",
+    )
+    if _picked != st.session_state["lang"]:
+        st.session_state["lang"] = _picked
+        st.rerun()
+lang = st.session_state["lang"]
+if lang == "bm":
+    st.caption(f"ℹ️ {PARTIAL_NOTICE}")
 
 
 def _badge(level: str) -> str:
     lvl = (level or "unknown").lower()
     cls = {"low": "badge-low", "moderate": "badge-moderate", "medium": "badge-medium",
            "high": "badge-high"}.get(lvl, "badge-unknown")
-    return f'<span class="badge {cls}">{lvl.upper()}</span>'
+    label = t(f"badge_{lvl}", lang) if f"badge_{lvl}" in _BADGE_KEYS else lvl.upper()
+    return f'<span class="badge {cls}">{label}</span>'
+
+
+_BADGE_KEYS = {"badge_low", "badge_moderate", "badge_medium", "badge_high", "badge_unknown"}
 
 
 # --------------------------------------------------------------------------- #
 # Sidebar — environment + demo loader
 # --------------------------------------------------------------------------- #
 with st.sidebar:
-    st.subheader("Runtime")
+    st.subheader(t("sidebar_runtime", lang))
     cfg = settings.public_summary()
     st.markdown(
         f"**Environment:** `{cfg['environment']}`  \n"
         f"**Demo mode:** `{cfg['demo_mode']}`  \n"
         f"**LLM:** `{cfg['llm_provider']}`  \n"
         f"**Weather:** `{cfg['weather_provider']}` · **Vision:** `{cfg['vision_provider']}`  \n"
-        f"**Recommendation:** `{cfg['recommendation_provider']}`"
+        f"**Recommendation:** `{cfg['recommendation_provider']}` · **Web search:** `{cfg['web_search_provider']}`"
     )
-    st.caption("Runs fully offline with mock LLM + local providers. No keys required.")
+    st.caption(t("offline_caption", lang))
     st.divider()
 
-    st.subheader("Load demo scenario")
+    st.subheader(t("sidebar_load_scenario", lang))
     scenarios = list_scenarios()
     labels = ["— none —"] + [s.get("title", s["id"]) for s in scenarios]
     picked = st.selectbox("Scenario", labels, index=0, label_visibility="collapsed")
     col_a, col_b = st.columns(2)
-    if col_a.button("Load", width="stretch") and picked != "— none —":
+    if col_a.button(t("load", lang), width="stretch") and picked != "— none —":
         scn = scenarios[labels.index(picked) - 1]
         st.session_state["loaded"] = scn
         st.session_state.pop("result", None)
         st.rerun()
-    if col_b.button("Reset", width="stretch"):
+    if col_b.button(t("reset", lang), width="stretch"):
         for k in ("loaded", "result"):
             st.session_state.pop(k, None)
         st.rerun()
@@ -99,18 +125,16 @@ ll = loaded.get("location", {}) if loaded else {}
 # --------------------------------------------------------------------------- #
 # Header + input
 # --------------------------------------------------------------------------- #
-st.title("SAHEL Agent")
-st.markdown('<p class="sahel-sub">Multimodal AI Agent for Environmental &amp; Agricultural Intelligence</p>',
-            unsafe_allow_html=True)
+st.title(t("app_title", lang))
+st.markdown(f'<p class="sahel-sub">{t("app_tagline", lang)}</p>', unsafe_allow_html=True)
 if settings.demo_judge_mode:
-    st.info(f"**Judge demo mode** — scenario *{loaded.get('title', settings.demo_judge_scenario)}* "
-            f"is preloaded. Press **ANALYZE** to run the agent.")
+    st.info(t("judge_mode_banner", lang, scenario=loaded.get("title", settings.demo_judge_scenario)))
 st.write("")
 
 left, right = st.columns([1, 1])
 with left:
-    st.markdown("### Input")
-    up = st.file_uploader("Plant / field image (optional)", type=["jpg", "jpeg", "png", "webp"])
+    st.markdown(f"### {t('input_header', lang)}")
+    up = st.file_uploader(t("image_uploader", lang), type=["jpg", "jpeg", "png", "webp"])
     image_bytes = None
     if up is not None:
         image_bytes = up.read()
@@ -129,30 +153,30 @@ with left:
         return float(v) if v is not None else None
 
     c1, c2 = st.columns(2)
-    temp = c1.number_input("Temperature (°C)", value=_pre("temperature_c"),
+    temp = c1.number_input(t("temperature", lang), value=_pre("temperature_c"),
                            min_value=-30.0, max_value=60.0, step=0.5, format="%.1f", placeholder="—")
-    soil = c2.number_input("Soil moisture (%)", value=_pre("soil_moisture_pct"),
+    soil = c2.number_input(t("soil_moisture", lang), value=_pre("soil_moisture_pct"),
                            min_value=0.0, max_value=100.0, step=1.0, placeholder="—")
     c3, c4 = st.columns(2)
-    airh = c3.number_input("Air humidity (%)", value=_pre("air_humidity_pct"),
+    airh = c3.number_input(t("air_humidity", lang), value=_pre("air_humidity_pct"),
                            min_value=0.0, max_value=100.0, step=1.0, placeholder="—")
-    rain = c4.number_input("Rainfall (mm)", value=_pre("rainfall_mm"),
+    rain = c4.number_input(t("rainfall", lang), value=_pre("rainfall_mm"),
                            min_value=0.0, max_value=2000.0, step=0.5, placeholder="—")
 
     stages = [g.value for g in GrowthStage]
     stage_default = ls.get("growth_stage", "unknown")
-    stage = st.selectbox("Growth stage", stages, index=stages.index(stage_default) if stage_default in stages else stages.index("unknown"))
+    stage = st.selectbox(t("growth_stage", lang), stages, index=stages.index(stage_default) if stage_default in stages else stages.index("unknown"))
 
-    loc_label = st.text_input("Location label", value=ll.get("label") or "")
+    loc_label = st.text_input(t("location_label", lang), value=ll.get("label") or "")
     c5, c6 = st.columns(2)
-    lat = c5.number_input("Latitude", value=float(ll["latitude"]) if ll.get("latitude") is not None else None,
+    lat = c5.number_input(t("latitude", lang), value=float(ll["latitude"]) if ll.get("latitude") is not None else None,
                           min_value=-90.0, max_value=90.0, format="%.4f", placeholder="—")
-    lon = c6.number_input("Longitude", value=float(ll["longitude"]) if ll.get("longitude") is not None else None,
+    lon = c6.number_input(t("longitude", lang), value=float(ll["longitude"]) if ll.get("longitude") is not None else None,
                           min_value=-180.0, max_value=180.0, format="%.4f", placeholder="—")
 
-    text_context = st.text_area("Context (optional)", value=loaded.get("text_context", "") if loaded else "", height=70)
+    text_context = st.text_area(t("context_optional", lang), value=loaded.get("text_context", "") if loaded else "", height=70)
 
-    analyze = st.button("ANALYZE", type="primary", width="stretch")
+    analyze = st.button(t("analyze_button", lang), type="primary", width="stretch")
 
 # --------------------------------------------------------------------------- #
 # Run the agent
@@ -173,9 +197,9 @@ if analyze:
         scenario_id=loaded.get("id") if loaded else None,
     )
     with right:
-        st.markdown("### Agent activity")
+        st.markdown(f"### {t('agent_activity', lang)}")
         holder = st.empty()
-        with st.spinner("Agent working…"):
+        with st.spinner(t("agent_working", lang)):
             t0 = time.time()
             result = SahelAgent().analyze(agent_input)
         lines = result.trace.as_lines()
@@ -205,7 +229,7 @@ if result is not None:
     if result.degraded:
         st.warning("Ran in degraded mode — see errors in Run details. A fallback level was used.")
 
-    st.markdown("## Situation")
+    st.markdown(f"## {t('situation', lang)}")
     st.markdown(
         f"{_badge(combined.get('level', 'unknown'))} {result.situation_line()}",
         unsafe_allow_html=True,
@@ -213,10 +237,10 @@ if result is not None:
     for note in obs.notes:
         st.markdown(f'<span class="small">• {note}</span>', unsafe_allow_html=True)
 
-    tab_obs, tab_env, tab_risk, tab_rec, tab_conf, tab_run = st.tabs(
-        ["Visual observations", "Environmental analysis", "Risk assessment",
-         "Recommendations", "Confidence & limitations", "Run details"]
-    )
+    tab_obs, tab_env, tab_risk, tab_rec, tab_conf, tab_run = st.tabs([
+        t("tab_visual", lang), t("tab_env", lang), t("tab_risk", lang),
+        t("tab_rec", lang), t("tab_conf", lang), t("tab_run", lang),
+    ])
 
     with tab_obs:
         v = obs.vision
@@ -303,6 +327,16 @@ if result is not None:
                 st.markdown("**Warnings**")
                 for w in rec["warnings"]:
                     st.markdown(f"- {w}")
+            if rec.get("evidence"):
+                src = rec.get("evidence_source", "")
+                badge = t("evidence_live", lang) if src == "exa" else t("evidence_sample", lang)
+                st.markdown(f"**{t('evidence_header', lang)}** — {badge}")
+                for ev in rec["evidence"]:
+                    title = ev.get("title", "source")
+                    url = ev.get("url", "")
+                    st.markdown(f"- [{title}]({url})" if url else f"- {title}")
+                    if ev.get("snippet"):
+                        st.markdown(f'<span class="small">&nbsp;&nbsp;{ev["snippet"]}</span>', unsafe_allow_html=True)
             st.caption(f"method: {rec.get('method', '')}")
 
     with tab_conf:
@@ -336,5 +370,5 @@ if result is not None:
             st.json(result.model_dump(exclude={"trace"}))
 else:
     with right:
-        st.markdown("### Agent activity")
-        st.info("Load a demo scenario or fill the form, then press **ANALYZE**.")
+        st.markdown(f"### {t('agent_activity', lang)}")
+        st.info(t("empty_state", lang))

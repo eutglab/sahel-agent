@@ -24,9 +24,14 @@ def plan_tools(agent_input: AgentInput, available: List[str]) -> List[str]:
     if "location" in mods and "get_weather" in available:
         plan.append("get_weather")
 
-    # Synthesis backbone — always, if the tools exist.
+    # Synthesis backbone — always, if the tools exist. search_web sits between
+    # risk and recommendation: it needs the risk level to decide whether
+    # grounding evidence is worth fetching, and its output feeds the
+    # recommendation (see SahelAgent._evidence_query).
     if "calculate_risk" in available:
         plan.append("calculate_risk")
+    if "search_web" in available:
+        plan.append("search_web")
     if "generate_recommendation" in available:
         plan.append("generate_recommendation")
 

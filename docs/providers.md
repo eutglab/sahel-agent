@@ -21,6 +21,7 @@ Per capability, via `.env`:
 | Weather | `WEATHER_PROVIDER` | `WEATHER_FALLBACK_CHAIN` | `open_meteo` · `local` · `mock` · `hackathon` |
 | Vision | `VISION_PROVIDER` | `VISION_FALLBACK_CHAIN` | `llm_vision` · `local_heuristic` · `mock` · `hackathon` |
 | Recommendation | `RECOMMENDATION_PROVIDER` | `RECOMMENDATION_FALLBACK_CHAIN` | `template` · `llm` · `hackathon` |
+| Web search | `WEB_SEARCH_PROVIDER` | `WEB_SEARCH_FALLBACK_CHAIN` | `exa` · `mock` |
 
 The tool builder puts the primary first, then appends the chain entries, then
 guarantees a terminal `IMPLEMENTED`/`MOCKED` provider even if you forgot one.
@@ -52,6 +53,8 @@ health_check() -> HealthStatus
 | recommendation | `template` | IMPLEMENTED | no | no |
 | recommendation | `llm` | INTEGRATION_READY | yes | yes |
 | recommendation | `hackathon` | INTEGRATION_READY | yes | yes |
+| web search | `exa` | IMPLEMENTED | yes | yes |
+| web search | `mock` | MOCKED | no | no |
 
 ## LLM abstraction
 

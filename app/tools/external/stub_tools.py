@@ -5,6 +5,9 @@ They are registered *disabled by default* (see .env.example) and their
 ``execute`` raises ``NotIntegratedError`` — the agent never fabricates data for
 them. On hackathon day, either implement the provider or use
 ``register_external_tool`` from app.tools.external.adapter.
+
+Note: ``search_web`` graduated to a real IMPLEMENTED tool backed by Exa — see
+``app.tools.websearch``.
 """
 from __future__ import annotations
 
@@ -36,33 +39,6 @@ class _NotIntegratedProvider(BaseProvider):
             detail="INTEGRATION_READY — not connected",
             provider=self.name,
         )
-
-
-# --- web search ---------------------------------------------------------- #
-class WebSearchInput(BaseModel):
-    query: str = Field(min_length=1)
-    max_results: int = 5
-
-
-class WebSearchOutput(BaseModel):
-    results: list = Field(default_factory=list)
-    source: str = ""
-
-
-class WebSearchTool(BaseTool):
-    name = "search_web"
-    description = "Search external sources for environmental/agronomic reference info (INTEGRATION_READY)."
-    status = MaturityStatus.INTEGRATION_READY
-
-    def input_schema(self) -> Type[BaseModel]:
-        return WebSearchInput
-
-    def output_schema(self) -> Type[BaseModel]:
-        return WebSearchOutput
-
-
-def build_web_search() -> WebSearchTool:
-    return WebSearchTool(providers=[_NotIntegratedProvider("web_search")])
 
 
 # --- file analysis ------------------------------------------------------ #

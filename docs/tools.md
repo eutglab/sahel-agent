@@ -99,9 +99,36 @@ the output always includes a disclaimer.
 
 ---
 
+## `search_web`  — IMPLEMENTED (evidence grounding via Exa)
+
+Called by the agent itself — never by the LLM directly, and never a generic
+lookup — only once `calculate_risk` has produced a `combined_risk` of
+`moderate` or `high`. Sits between `calculate_risk` and `generate_recommendation`
+in the backbone so its results reach the recommendation.
+
+**Input:** `query: str`, `max_results: int = 4`
+**Output:** `results[]` (`title`, `url`, `snippet`, `published_date`), `source`,
+`query_used`, `note`
+
+**Providers (chain):** `exa` → `mock`
+
+- `exa` (IMPLEMENTED): real neural search via [Exa](https://exa.ai); self-skips
+  offline/demo mode or when `EXA_API_KEY` is unset; any network error falls
+  through to `mock`.
+- `mock` (MOCKED): deterministic sample sources, clearly labelled `[sample]` and
+  `source: "sample (offline)"` — terminal provider so the Evidence section
+  always renders, even fully offline.
+
+Query is built from the dominant risk driver + growth stage + location label —
+never a raw user string, so no prompt/query injection surface. Surfaced in the
+UI's Recommendations tab under **Evidence**, with a badge showing whether the
+sources are live (Exa) or offline samples.
+
+---
+
 ## INTEGRATION_READY stubs (disabled by default)
 
-`search_web`, `analyze_file`, `send_notification` — real `BaseTool` contract,
+`analyze_file`, `send_notification` — real `BaseTool` contract,
 registered only when `TOOL_<NAME>_ENABLED=true`, and their provider raises
 `NotIntegratedError`. They demonstrate the extension surface without pretending
 to work.

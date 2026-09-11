@@ -19,7 +19,8 @@ synthetic data by design · `NOT IMPLEMENTED` = interface/doc only.
 | Run observability (JSONL + SQLite) | **IMPLEMENTED** | `app/core/logging.py`, `app/data/database.py` |
 | 3-level fallback (LLM → planner → precomputed) | **IMPLEMENTED** | tested in `test_agent.py` |
 | Offline / DEMO mode | **IMPLEMENTED** | default; `pytest -m offline` blocks sockets |
-| Streamlit UI | **IMPLEMENTED** | `ui/streamlit_app.py`; smoke-tested via `AppTest` |
+| Streamlit UI | **IMPLEMENTED** | `ui/streamlit_app.py`; smoke-tested via `AppTest` (`tests/test_ui_smoke.py`) |
+| Language switcher (EN/FR/Bambara) | **PARTIAL** | `app/core/i18n.py`; EN/FR complete for the UI chrome, Bambara covers core farming terms only (not native-reviewed) — see `docs/i18n.md` |
 | Demo scenarios (5) + one-click load | **IMPLEMENTED** | `demo_data/scenarios/*` + precomputed |
 | `healthcheck.py` | **IMPLEMENTED** | READY with zero config |
 | `scripts/test_integrations.py` | **IMPLEMENTED** | pre-flight; PASS in mock mode |
@@ -28,7 +29,8 @@ synthetic data by design · `NOT IMPLEMENTED` = interface/doc only.
 | LLM client abstraction | **IMPLEMENTED** | `MockLLMClient` real; SDK adapters INTEGRATION_READY |
 | Anthropic / OpenAI / hackathon LLM adapters | **INTEGRATION_READY** | active with key + `pip install <sdk>` |
 | Hackathon provider skeletons (weather/vision/recommendation) | **INTEGRATION_READY** | fill `providers/hackathon.py` on the day |
-| `search_web`, `analyze_file`, `send_notification` | **INTEGRATION_READY** | registered only when enabled; raise `NotIntegratedError` |
+| `search_web` (Exa) | **IMPLEMENTED** | real neural search, offline sample fallback; agent-triggered only on elevated risk |
+| `analyze_file`, `send_notification` | **INTEGRATION_READY** | registered only when enabled; raise `NotIntegratedError` |
 | Satellite / geospatial / IoT pull / voice | **NOT IMPLEMENTED** | interface signatures documented (`docs/integrations.md`) |
 | Multi-agent / RAG / trained CV model | **NOT IMPLEMENTED** | out of scope by design |
 | Docker / K8s / queues / servers | **NOT IMPLEMENTED** | out of scope by design |
@@ -38,7 +40,7 @@ synthetic data by design · `NOT IMPLEMENTED` = interface/doc only.
 | Check | Result |
 |---|---|
 | `make setup` on a clean clone | works (venv + deps + seed) |
-| `pytest -m "not integration"` | **53 passed** |
+| `pytest -m "not integration"` | **61 passed** |
 | `pytest -m offline` | **passed** (sockets blocked) |
 | `python healthcheck.py` | **STATUS: READY** (0 failed, 0 warnings) |
 | `python scripts/test_integrations.py` | **RESULT: PASS** (0 hard failures) |

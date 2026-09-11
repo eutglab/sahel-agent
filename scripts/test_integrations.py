@@ -32,6 +32,7 @@ CANNED = {
     "get_weather": {"label": "Fictional Site Alpha", "latitude": 14.5, "longitude": -4.2},
     "calculate_risk": {"sensors": None, "vision": None, "weather": None, "growth_stage": "flowering"},
     "generate_recommendation": {"modalities": [], "growth_stage": "flowering"},
+    "search_web": {"query": "heat stress crop management advisory", "max_results": 2},
 }
 
 

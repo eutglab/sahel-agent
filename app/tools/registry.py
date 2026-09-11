@@ -30,7 +30,7 @@ _BUILTIN_FACTORIES: Dict[str, str] = {
     "weather": "app.tools.weather.tool:build",
     "risk": "app.tools.risk.tool:build",
     "recommendation": "app.tools.recommendation.tool:build",
-    "web_search": "app.tools.external.stub_tools:build_web_search",
+    "web_search": "app.tools.websearch.tool:build",
     "file_analysis": "app.tools.external.stub_tools:build_file_analysis",
     "notification": "app.tools.external.stub_tools:build_notification",
 }
