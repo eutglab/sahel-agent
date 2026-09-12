@@ -253,14 +253,31 @@ def needs_live_evidence(question: str, result: Optional[AgentResult]) -> bool:
     return any(k in question.lower() for k in ("evidence", "source", "danger", "safe", "confirm"))
 
 
-def answer(question: str, result: Optional[AgentResult], agent_input: Optional[AgentInput] = None) -> Dict[str, Any]:
+_LANG_NAMES = {"fr": "French", "bm": "French (Bambara is not reliably supported — use French)"}
+
+
+def answer(
+    question: str,
+    result: Optional[AgentResult],
+    agent_input: Optional[AgentInput] = None,
+    lang: str = "en",
+) -> Dict[str, Any]:
     """Answer ``question``. Never raises, never invents field data that wasn't
-    actually produced by the pipeline."""
+    actually produced by the pipeline.
+
+    ``lang`` only affects the real-LLM path (asked to respond in that
+    language, still grounded on the same structured data). The deterministic
+    router's templated text is English-only by design — see docs/i18n.md —
+    the UI discloses this rather than mixing partial translations into a
+    single sentence.
+    """
+    lang_instruction = f" Respond in {_LANG_NAMES[lang]}." if lang in _LANG_NAMES else ""
+
     if result is None:
         client = get_llm_client()
         if not client.is_mock and not settings.offline_first:
             try:
-                resp = client.complete(_SYSTEM_PRE, question, max_tokens=200)
+                resp = client.complete(_SYSTEM_PRE + lang_instruction, question, max_tokens=200)
                 if resp.text.strip():
                     return {"text": resp.text.strip(), "evidence": [], "used_tool": None}
             except Exception as exc:  # noqa: BLE001 - never break the panel
@@ -280,7 +297,7 @@ def answer(question: str, result: Optional[AgentResult], agent_input: Optional[A
     if not client.is_mock and not settings.offline_first:
         try:
             prompt = "STRUCTURED ANALYSIS:\n" + json.dumps(ctx, default=str)[:5000] + f"\n\nQUESTION: {question}"
-            resp = client.complete(_SYSTEM_READY, prompt, max_tokens=250)
+            resp = client.complete(_SYSTEM_READY + lang_instruction, prompt, max_tokens=250)
             if resp.text.strip():
                 return {"text": resp.text.strip(), "evidence": ctx["evidence"], "used_tool": used_tool}
         except Exception as exc:  # noqa: BLE001 - never break the panel

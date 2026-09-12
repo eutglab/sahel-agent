@@ -205,12 +205,21 @@ def _ask_agent_dialog(result, agent_input):
         cls = "chat-bubble-user" if role == "user" else "chat-bubble-agent"
         st.markdown(f'<div class="{cls}">{text_}</div>', unsafe_allow_html=True)
 
-    suggestions = SUGGESTED_QUESTIONS if result is not None else GENERAL_SUGGESTED_QUESTIONS
-    sug_cols = st.columns(len(suggestions))
-    for i, q in enumerate(suggestions):
-        if sug_cols[i].button(q, key=f"_sugg_{i}", width="stretch"):
-            _ask(q, result, agent_input)
+    # Canonical (English) question paired with its translated display label —
+    # the router matches English keywords, but nothing shown to the user has
+    # to be in English just because of that.
+    if result is not None:
+        pairs = list(zip(SUGGESTED_QUESTIONS, ("sugg_why", "sugg_first", "sugg_evidence")))
+    else:
+        pairs = list(zip(GENERAL_SUGGESTED_QUESTIONS, ("sugg_analyze", "sugg_how", "sugg_confidence")))
+    sug_cols = st.columns(len(pairs))
+    for i, (canonical_q, label_key) in enumerate(pairs):
+        if sug_cols[i].button(t(label_key, lang), key=f"_sugg_{i}", width="stretch"):
+            _ask(canonical_q, result, agent_input, display_as=t(label_key, lang))
             st.rerun()
+
+    if lang != "en" and t("chat_lang_note", lang):
+        st.caption(f"ℹ️ {t('chat_lang_note', lang)}")
 
     q_col, send_col = st.columns([5, 1])
     # Keyed on history length so the field clears after each send instead of
@@ -226,11 +235,11 @@ def _ask_agent_dialog(result, agent_input):
         st.caption(t("chat_voice_note", lang))
 
 
-def _ask(question: str, result, agent_input) -> None:
-    st.session_state["chat_history"].append(("user", question))
+def _ask(question: str, result, agent_input, display_as: str | None = None) -> None:
+    st.session_state["chat_history"].append(("user", display_as or question))
     thinking = t("chat_checking_evidence", lang) if needs_live_evidence(question, result) else t("chat_thinking", lang)
     with st.spinner(thinking):
-        resp = assistant_answer(question, result, agent_input)
+        resp = assistant_answer(question, result, agent_input, lang=lang)
     st.session_state["chat_history"].append(("agent", resp["text"]))
 
 

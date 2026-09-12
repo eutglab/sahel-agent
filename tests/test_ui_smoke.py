@@ -87,6 +87,23 @@ def test_ask_the_agent_full_acceptance_flow():
     assert not at.exception
 
 
+def test_chat_suggestions_translate_with_the_language_switcher():
+    """Regression test: the chat previously stayed English regardless of the
+    language switcher because suggestion labels and welcome text were
+    hardcoded. They must follow `lang` from st.session_state."""
+    at = AppTest.from_file(APP_PATH, default_timeout=30)
+    at.run()
+    lang_box = next(sb for sb in at.selectbox if sb.label == "Language")
+    lang_box.set_value("🇫🇷 FR").run()
+    assert not at.exception
+
+    chat_btn = next(b for b in at.button if b.key == "_open_chat")
+    chat_btn.click().run()
+    assert not at.exception
+    assert any(b.label == "Qu'analysez-vous ?" for b in at.button)
+    assert not any(b.label == "What can you analyze?" for b in at.button)
+
+
 def test_app_demo_scenario_end_to_end():
     at = AppTest.from_file(APP_PATH, default_timeout=30)
     at.run()
