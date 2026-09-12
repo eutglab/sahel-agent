@@ -93,7 +93,9 @@ Full detail: [`docs/architecture.md`](docs/architecture.md).
 - `healthcheck.py` + `scripts/test_integrations.py` pre-flight checks
 - 5 demo scenarios + one-click "Load Demo Scenario"
 - EN / FR / Bambara language switcher for the UI chrome ([`docs/i18n.md`](docs/i18n.md) — scope disclosed honestly)
-- 61 automated tests incl. an offline suite that blocks all sockets
+- Risk-first result layout (assessment → why → actions → evidence) with technical detail behind progressive disclosure, not up front
+- **Ask the Agent** — a grounded Q&A panel over the current analysis; deterministic by default, a real LLM when one is configured, and able to trigger `search_web` itself if a question needs evidence the pipeline didn't already fetch
+- 68 automated tests incl. an offline suite that blocks all sockets
 
 ## Tools
 
@@ -149,10 +151,10 @@ make demo        # or: streamlit run ui/streamlit_app.py
 ```
 
 1. Open the app → sidebar → **Load demo scenario** → *Scenario 4 — Multiple risk factors*.
-2. Press **ANALYZE**.
-3. Watch **Agent activity** list the tools it chose and ran.
-4. Read the 6 result tabs, including **Risk assessment → Cross-check** (converging evidence)
-   and **Confidence & limitations**.
+2. Press **Analyze Field**.
+3. Read top-down: risk level → main driver → why → recommended actions → evidence.
+4. Open **View Details** for the full technical picture (six categories, live trace, raw JSON) — kept, just no longer first.
+5. Try **💬 Ask the Agent** — "Why is the risk moderate?", "What should I do first?", "Show me the evidence."
 
 Target: under 60 seconds from launch to a full result. Script: [`docs/demo.md`](docs/demo.md).
 
@@ -175,7 +177,7 @@ print(result.recommendation["priority"], result.recommendation["main_finding"])
 ## Testing
 
 ```bash
-make test              # pytest -m "not integration"   (61 tests)
+make test              # pytest -m "not integration"   (68 tests)
 pytest -m offline      # offline guarantee (sockets blocked)
 python healthcheck.py
 python scripts/test_integrations.py

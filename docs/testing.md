@@ -1,7 +1,7 @@
 # Testing strategy
 
 ```bash
-make test            # pytest -m "not integration"   → 61 tests, ~0.5 s
+make test            # pytest -m "not integration"   → 68 tests, ~0.5 s
 pytest -m offline    # offline guarantee subset (sockets blocked)
 pytest               # everything; integration tests self-skip if unconfigured
 ```

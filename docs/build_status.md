@@ -21,6 +21,9 @@ synthetic data by design · `NOT IMPLEMENTED` = interface/doc only.
 | Offline / DEMO mode | **IMPLEMENTED** | default; `pytest -m offline` blocks sockets |
 | Streamlit UI | **IMPLEMENTED** | `ui/streamlit_app.py`; smoke-tested via `AppTest` (`tests/test_ui_smoke.py`) |
 | Language switcher (EN/FR/Bambara) | **PARTIAL** | `app/core/i18n.py`; EN/FR complete for the UI chrome, Bambara covers core farming terms only (not native-reviewed) — see `docs/i18n.md` |
+| Risk-first result layout (progressive disclosure) | **IMPLEMENTED** | assessment → driver → why → actions → evidence up front; six technical tabs moved behind "View Details" |
+| Ask the Agent (grounded Q&A panel) | **IMPLEMENTED** | `app/agent/assistant.py`; deterministic router by default (mirrors L2), a real LLM when configured (mirrors L1), can call the existing `search_web` tool live if a question needs evidence the pipeline skipped — never a disconnected chatbot |
+| Ask the Agent — voice input | **NOT IMPLEMENTED** | mic button present, honestly inert (no speech recognizer wired); text always works |
 | Demo scenarios (5) + one-click load | **IMPLEMENTED** | `demo_data/scenarios/*` + precomputed |
 | `healthcheck.py` | **IMPLEMENTED** | READY with zero config |
 | `scripts/test_integrations.py` | **IMPLEMENTED** | pre-flight; PASS in mock mode |
@@ -40,7 +43,7 @@ synthetic data by design · `NOT IMPLEMENTED` = interface/doc only.
 | Check | Result |
 |---|---|
 | `make setup` on a clean clone | works (venv + deps + seed) |
-| `pytest -m "not integration"` | **61 passed** |
+| `pytest -m "not integration"` | **68 passed** |
 | `pytest -m offline` | **passed** (sockets blocked) |
 | `python healthcheck.py` | **STATUS: READY** (0 failed, 0 warnings) |
 | `python scripts/test_integrations.py` | **RESULT: PASS** (0 hard failures) |

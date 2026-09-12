@@ -51,7 +51,7 @@ Only synthetic/fictional data: procedurally generated images, hand-authored sens
 values, fictional location names. No real farms, people, or organisations.
 
 ### 10. How do you validate the system?
-61 automated tests (unit, contract, agent behaviour, resilience, offline) plus
+68 automated tests (unit, contract, agent behaviour, resilience, offline) plus
 `healthcheck.py`, `scripts/test_integrations.py`, and a local `benchmark`. We do
 **not** validate agronomic correctness — that's out of scope.
 
@@ -81,7 +81,7 @@ picks the right tools and explains itself — designed for low-resource settings
 See `docs/architecture.md` §4 and the BUILD STATUS in the final report: the agent
 loop, tool registry, provider abstraction, 5 working tools, trace + run log,
 3-level fallback, 5 demo scenarios, the external-tool adapter, health + preflight
-scripts, 61 tests, and full docs.
+scripts, 68 tests, and full docs.
 
 ### 17. What is genuinely innovative?
 See `docs/innovation.md`: (a) live-provable extensibility via the registry +

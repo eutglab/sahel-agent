@@ -33,9 +33,19 @@ def test_app_theme_toggle_does_not_crash():
     at = AppTest.from_file(APP_PATH, default_timeout=30)
     at.run()
     assert not at.exception
-    toggle = next((b for b in at.button if "Dark" in b.label or "Light" in b.label), None)
+    toggle = next((b for b in at.button if b.key == "_theme_toggle"), None)
     assert toggle is not None
     toggle.click().run()
+    assert not at.exception
+
+
+def test_app_chat_button_present_and_opens_without_crash():
+    at = AppTest.from_file(APP_PATH, default_timeout=30)
+    at.run()
+    assert not at.exception
+    chat_btn = next((b for b in at.button if b.key == "_open_chat"), None)
+    assert chat_btn is not None
+    chat_btn.click().run()
     assert not at.exception
 
 
@@ -53,7 +63,7 @@ def test_app_demo_scenario_end_to_end():
     assert not at.exception
     if at.button:
         for b in at.button:
-            if b.label in ("ANALYZE", "ANALYSER"):
+            if b.label in ("Analyze Field", "Analyser le champ"):
                 b.click().run()
                 break
     assert not at.exception
