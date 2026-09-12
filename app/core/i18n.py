@@ -106,10 +106,21 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "Voice input isn't wired to a speech recognizer yet — type your question above.",
         "fr": "La saisie vocale n'est pas encore connectée — tapez votre question ci-dessus.",
     },
-    "chat_empty": {
-        "en": "Analyze a field first — I'll have something to discuss once there's a result.",
-        "fr": "Analysez d'abord un champ — j'aurai de quoi discuter une fois un résultat disponible.",
+    "chat_welcome_pre": {
+        "en": (
+            "**Hi — I'm the SAHEL Agent.**\n\nI can help you understand environmental and "
+            "agricultural risk. Ask me about the system, or run an analysis and ask me about "
+            "the result."
+        ),
+        "fr": (
+            "**Bonjour — je suis SAHEL Agent.**\n\nJe peux vous aider à comprendre le risque "
+            "environnemental et agricole. Posez-moi des questions sur le système, ou lancez "
+            "une analyse et interrogez-moi sur le résultat."
+        ),
     },
+    "chat_context_available": {"en": "Analysis context available", "fr": "Contexte d'analyse disponible"},
+    "chat_thinking": {"en": "Thinking…", "fr": "Réflexion…"},
+    "chat_checking_evidence": {"en": "🔎 Checking external evidence…", "fr": "🔎 Vérification des preuves externes…"},
     "tab_visual": {"en": "Visual observations", "fr": "Observations visuelles"},
     "tab_env": {"en": "Environmental analysis", "fr": "Analyse environnementale"},
     "tab_risk": {"en": "Risk assessment", "fr": "Évaluation du risque"},

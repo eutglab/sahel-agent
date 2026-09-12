@@ -22,7 +22,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.agent.agent import SahelAgent  # noqa: E402
-from app.agent.assistant import SUGGESTED_QUESTIONS, answer as assistant_answer  # noqa: E402
+from app.agent.assistant import (  # noqa: E402
+    GENERAL_SUGGESTED_QUESTIONS,
+    SUGGESTED_QUESTIONS,
+    answer as assistant_answer,
+    needs_live_evidence,
+)
 from app.core.config import settings  # noqa: E402
 from app.core.i18n import LANGUAGES, PARTIAL_NOTICE, t  # noqa: E402
 from app.core.schemas import AgentInput, GrowthStage, Location, SensorReadings  # noqa: E402
@@ -189,22 +194,29 @@ def _evidence_domain(url: str) -> str:
 @st.dialog(t("chat_title", lang))
 def _ask_agent_dialog(result, agent_input):
     st.caption(t("chat_subtitle", lang))
-    if result is None:
-        st.info(t("chat_empty", lang))
-        return
+    if result is not None:
+        st.caption(f"🟢 {t('chat_context_available', lang)}")
 
-    for role, text_ in st.session_state["chat_history"]:
+    history = st.session_state["chat_history"]
+    if not history:
+        st.markdown(t("chat_welcome_pre", lang))
+
+    for role, text_ in history:
         cls = "chat-bubble-user" if role == "user" else "chat-bubble-agent"
         st.markdown(f'<div class="{cls}">{text_}</div>', unsafe_allow_html=True)
 
-    sug_cols = st.columns(len(SUGGESTED_QUESTIONS))
-    for i, q in enumerate(SUGGESTED_QUESTIONS):
+    suggestions = SUGGESTED_QUESTIONS if result is not None else GENERAL_SUGGESTED_QUESTIONS
+    sug_cols = st.columns(len(suggestions))
+    for i, q in enumerate(suggestions):
         if sug_cols[i].button(q, key=f"_sugg_{i}", width="stretch"):
             _ask(q, result, agent_input)
             st.rerun()
 
     q_col, send_col = st.columns([5, 1])
-    q_text = q_col.text_input(t("chat_placeholder", lang), key="_chat_input", label_visibility="collapsed",
+    # Keyed on history length so the field clears after each send instead of
+    # re-showing the previous question (a fixed key would retain stale text).
+    input_key = f"_chat_input_{len(history)}"
+    q_text = q_col.text_input(t("chat_placeholder", lang), key=input_key, label_visibility="collapsed",
                                placeholder=t("chat_placeholder", lang))
     if send_col.button(t("chat_send", lang), width="stretch") and q_text.strip():
         _ask(q_text.strip(), result, agent_input)
@@ -216,7 +228,9 @@ def _ask_agent_dialog(result, agent_input):
 
 def _ask(question: str, result, agent_input) -> None:
     st.session_state["chat_history"].append(("user", question))
-    resp = assistant_answer(question, result, agent_input)
+    thinking = t("chat_checking_evidence", lang) if needs_live_evidence(question, result) else t("chat_thinking", lang)
+    with st.spinner(thinking):
+        resp = assistant_answer(question, result, agent_input)
     st.session_state["chat_history"].append(("agent", resp["text"]))
 
 

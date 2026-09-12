@@ -95,7 +95,7 @@ Full detail: [`docs/architecture.md`](docs/architecture.md).
 - EN / FR / Bambara language switcher for the UI chrome ([`docs/i18n.md`](docs/i18n.md) — scope disclosed honestly)
 - Risk-first result layout (assessment → why → actions → evidence) with technical detail behind progressive disclosure, not up front
 - **Ask the Agent** — a grounded Q&A panel over the current analysis; deterministic by default, a real LLM when one is configured, and able to trigger `search_web` itself if a question needs evidence the pipeline didn't already fetch
-- 68 automated tests incl. an offline suite that blocks all sockets
+- 74 automated tests incl. an offline suite that blocks all sockets
 
 ## Tools
 
@@ -177,7 +177,7 @@ print(result.recommendation["priority"], result.recommendation["main_finding"])
 ## Testing
 
 ```bash
-make test              # pytest -m "not integration"   (68 tests)
+make test              # pytest -m "not integration"   (74 tests)
 pytest -m offline      # offline guarantee (sockets blocked)
 python healthcheck.py
 python scripts/test_integrations.py

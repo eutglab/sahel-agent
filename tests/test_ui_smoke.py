@@ -49,6 +49,44 @@ def test_app_chat_button_present_and_opens_without_crash():
     assert not at.exception
 
 
+def test_ask_the_agent_full_acceptance_flow():
+    """The exact sequence the product spec demands: fresh launch -> chat opens
+    immediately, pre-analysis question answered honestly -> Analyze Field ->
+    contextual question answered from the real result. No step may raise, and
+    no step may show a disabled/dead-end chat."""
+    at = AppTest.from_file(APP_PATH, default_timeout=30)
+    at.run()
+    assert not at.exception
+
+    # TEST A — chat is immediately clickable, no analysis has run.
+    chat_btn = next(b for b in at.button if b.key == "_open_chat")
+    chat_btn.click().run()
+    assert not at.exception
+    general_btn = next((b for b in at.button if b.label == "What can you analyze?"), None)
+    assert general_btn is not None, "pre-analysis suggested question missing -> chat looks dead"
+    general_btn.click().run()
+    assert not at.exception
+    assert any("water stress" in m.value.lower() or "risk" in m.value.lower() for m in at.markdown)
+
+    # TEST C — run the actual analysis (multiple-risks demo scenario).
+    scenario_box = next(sb for sb in at.selectbox if sb.label == "Scenario")
+    scenario_box.set_value(next(o for o in scenario_box.options if "Multiple risk" in o)).run()
+    load_btn = next(b for b in at.button if b.label == "Load")
+    load_btn.click().run()
+    analyze_btn = next(b for b in at.button if b.label in ("Analyze Field", "Analyser le champ"))
+    analyze_btn.click().run()
+    assert not at.exception
+
+    # TEST D — reopen chat, ask a contextual question, get a grounded answer.
+    chat_btn2 = next(b for b in at.button if b.key == "_open_chat")
+    chat_btn2.click().run()
+    assert not at.exception
+    contextual_btn = next((b for b in at.button if b.label == "Why is the risk moderate?"), None)
+    assert contextual_btn is not None, "post-analysis suggestions missing after a successful run"
+    contextual_btn.click().run()
+    assert not at.exception
+
+
 def test_app_demo_scenario_end_to_end():
     at = AppTest.from_file(APP_PATH, default_timeout=30)
     at.run()

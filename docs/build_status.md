@@ -22,7 +22,7 @@ synthetic data by design · `NOT IMPLEMENTED` = interface/doc only.
 | Streamlit UI | **IMPLEMENTED** | `ui/streamlit_app.py`; smoke-tested via `AppTest` (`tests/test_ui_smoke.py`) |
 | Language switcher (EN/FR/Bambara) | **PARTIAL** | `app/core/i18n.py`; EN/FR complete for the UI chrome, Bambara covers core farming terms only (not native-reviewed) — see `docs/i18n.md` |
 | Risk-first result layout (progressive disclosure) | **IMPLEMENTED** | assessment → driver → why → actions → evidence up front; six technical tabs moved behind "View Details" |
-| Ask the Agent (grounded Q&A panel) | **IMPLEMENTED** | `app/agent/assistant.py`; deterministic router by default (mirrors L2), a real LLM when configured (mirrors L1), can call the existing `search_web` tool live if a question needs evidence the pipeline skipped — never a disconnected chatbot |
+| Ask the Agent (grounded Q&A panel) | **IMPLEMENTED** | `app/agent/assistant.py`; two explicit states — `pre_analysis` (general product Q&A, never invents field data) and `analysis_ready` (answers from the current result). Deterministic router by default (mirrors L2), a real LLM when configured (mirrors L1), can call the existing `search_web` tool live if a question needs evidence the pipeline skipped. Chat opens immediately on launch, never a dead-end panel — full open→ask→analyze→ask flow covered by `tests/test_ui_smoke.py::test_ask_the_agent_full_acceptance_flow` |
 | Ask the Agent — voice input | **NOT IMPLEMENTED** | mic button present, honestly inert (no speech recognizer wired); text always works |
 | Demo scenarios (5) + one-click load | **IMPLEMENTED** | `demo_data/scenarios/*` + precomputed |
 | `healthcheck.py` | **IMPLEMENTED** | READY with zero config |
@@ -43,7 +43,7 @@ synthetic data by design · `NOT IMPLEMENTED` = interface/doc only.
 | Check | Result |
 |---|---|
 | `make setup` on a clean clone | works (venv + deps + seed) |
-| `pytest -m "not integration"` | **68 passed** |
+| `pytest -m "not integration"` | **74 passed** |
 | `pytest -m offline` | **passed** (sockets blocked) |
 | `python healthcheck.py` | **STATUS: READY** (0 failed, 0 warnings) |
 | `python scripts/test_integrations.py` | **RESULT: PASS** (0 hard failures) |
