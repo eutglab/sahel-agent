@@ -1,15 +1,18 @@
 # SAHEL Agent — runtime dependencies
 # Every dependency has a reason. No heavy infra.
-# Pinned to exact versions verified end-to-end (fresh venv, full import chain,
-# full test suite) — reproducible deploys instead of "works locally" drift.
+# Deliberately >= (not pinned): deploy targets range from local Python 3.10 to
+# Streamlit Community Cloud's Python 3.14, and numpy/pandas need the freedom
+# to resolve a version with a prebuilt wheel for whichever is in use — a
+# strict pin to an older release with no cp314 wheel forces a source build
+# that can hang for many minutes on Cloud. Verified 2026-09-12 on both.
 
-streamlit==1.63.0      # UI (single page, zero frontend build)
-pydantic==2.13.5       # strict tool input/output contracts (anti-hallucination)
-pyyaml==6.0.3          # configurable sensor thresholds + defaults
-pillow==12.3.0         # local image heuristic (no ML model)
-numpy==2.2.6           # pixel math for the local vision heuristic
-pandas==2.3.3          # benchmark tables + run history views
-requests==2.34.2       # Open-Meteo / Exa (keyless-capable) HTTP calls
+streamlit>=1.30        # UI (single page, zero frontend build)
+pydantic>=2.5          # strict tool input/output contracts (anti-hallucination)
+pyyaml>=6.0            # configurable sensor thresholds + defaults
+pillow>=10.0           # local image heuristic (no ML model)
+numpy>=1.24            # pixel math for the local vision heuristic
+pandas>=2.0            # benchmark tables + run history views
+requests>=2.31         # Open-Meteo / Exa (keyless-capable) HTTP calls
 
 # --- optional, only used when a real LLM provider is enabled ---
 # anthropic>=0.40      # AnthropicLLMClient (real reasoning + vision)
