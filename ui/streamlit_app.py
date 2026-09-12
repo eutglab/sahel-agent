@@ -74,7 +74,7 @@ def _css(theme: str) -> str:
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     }}
     [data-testid="stSidebar"] {{ background-color: var(--bg2) !important; border-right: 1px solid var(--border); }}
-    [data-testid="stSidebar"] * {{ font-family: 'Inter', sans-serif !important; }}
+    [data-testid="stSidebar"] *:not([data-testid="stIconMaterial"]) {{ font-family: 'Inter', sans-serif !important; }}
     [data-testid="stHeader"] {{ background-color: transparent !important; }}
     .stApp, .stApp p, .stApp label, .stApp span, .stApp li {{ color: var(--text); }}
     .block-container {{ padding-top: 1.4rem; padding-bottom: 3rem; max-width: 1080px; }}
