@@ -16,7 +16,8 @@ requests>=2.31         # Open-Meteo / Exa (keyless-capable) HTTP calls
 
 # --- optional, only used when a real LLM provider is enabled ---
 # anthropic>=0.40      # AnthropicLLMClient (real reasoning + vision)
-# openai>=1.30         # OpenAILLMClient (alternative provider)
+# openai>=1.30         # OpenAILLMClient, HackathonLLMClient and OpenRouterLLMClient
+#                      # (OpenRouter's endpoint is OpenAI-compatible — same SDK, different base_url)
 
 # --- dev / test ---
 pytest>=7.4

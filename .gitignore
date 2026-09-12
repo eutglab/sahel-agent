@@ -36,4 +36,5 @@ logs/
 
 # Uploaded user images (never committed)
 demo_data/uploads/
+image_test/
 *.pdf

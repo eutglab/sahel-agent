@@ -107,10 +107,7 @@ def test_chat_suggestions_translate_with_the_language_switcher():
 def test_app_demo_scenario_end_to_end():
     at = AppTest.from_file(APP_PATH, default_timeout=30)
     at.run()
-    # Sidebar scenario selectbox is index 0 among selectboxes if language
-    # picker loaded first; select the last scenario option and load it.
-    scenario_box = next(sb for sb in at.selectbox if sb.label in ("Language", "Scenario") or sb.label == "")
-    # Fall back: pick the sidebar one with more than one option.
+    # Sidebar scenario selectbox: pick the one with more than one option.
     for sb in at.selectbox:
         if len(sb.options) > 2:
             sb.set_value(sb.options[-1]).run()
@@ -122,3 +119,37 @@ def test_app_demo_scenario_end_to_end():
                 b.click().run()
                 break
     assert not at.exception
+
+
+def test_view_details_renders_agent_capability_and_autonomy_tab():
+    """The new 'Agent Capability & Autonomy' panel (View Details -> first tab)
+    must render without crashing and show a real, non-fabricated mode/level —
+    not a made-up percentage."""
+    at = AppTest.from_file(APP_PATH, default_timeout=30)
+    at.run()
+    scenario_box = next(sb for sb in at.selectbox if sb.label == "Scenario")
+    scenario_box.set_value(scenario_box.options[-1]).run()
+    load_btn = next(b for b in at.button if b.label in ("Load", "Charger"))
+    load_btn.click().run()
+    assert not at.exception
+
+    analyze_btn = next(b for b in at.button if b.label in ("Analyze Field", "Analyser le champ"))
+    analyze_btn.click().run()
+    assert not at.exception
+
+    details_btn = next(b for b in at.button if b.label in ("View Details", "Voir les détails"))
+    details_btn.click().run()
+    assert not at.exception
+
+    # Operating mode / autonomy level render as a custom "mini-stat" block
+    # (st.metric truncates long values instead of wrapping them) — check the
+    # raw markdown source every markdown element was given.
+    rendered = "\n".join(md.value for md in at.markdown)
+    assert "Current operating mode" in rendered
+    assert "Autonomy level" in rendered
+    assert any(
+        mode in rendered
+        for mode in ("Offline Demo", "Deterministic Agent", "LLM Tool-Calling", "LLM + External Evidence")
+    )
+    assert "Level " in rendered
+    assert "95%" not in rendered

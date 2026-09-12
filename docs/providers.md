@@ -17,7 +17,7 @@ Per capability, via `.env`:
 
 | Capability | Primary var | Chain var | Values |
 |---|---|---|---|
-| LLM | `LLM_PROVIDER` | — (factory) | `mock` · `anthropic` · `openai` · `hackathon` |
+| LLM | `LLM_PROVIDER` | — (factory) | `mock` · `anthropic` · `openai` · `openrouter` · `hackathon` |
 | Weather | `WEATHER_PROVIDER` | `WEATHER_FALLBACK_CHAIN` | `open_meteo` · `local` · `mock` · `hackathon` |
 | Vision | `VISION_PROVIDER` | `VISION_FALLBACK_CHAIN` | `llm_vision` · `local_heuristic` · `mock` · `hackathon` |
 | Recommendation | `RECOMMENDATION_PROVIDER` | `RECOMMENDATION_FALLBACK_CHAIN` | `template` · `llm` · `hackathon` |
@@ -70,6 +70,16 @@ provider falls back to `MockLLMClient`, so the agent always has a reasoning path
   key **and** the SDK installed (SDKs are commented out of `requirements.txt`).
 - `HackathonLLMClient`: subclass of the OpenAI client pointed at
   `HACKATHON_LLM_BASE_URL` (assumed OpenAI-compatible); override 3 methods if not.
+- `OpenRouterLLMClient` (INTEGRATION_READY): same OpenAI-compatible shape, pointed
+  at `OPENROUTER_BASE_URL` (default `https://openrouter.ai/api/v1`). Requires
+  **both** `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` — no model default, since
+  OpenRouter's catalogue changes and guessing one risks a silent 404; pick one
+  from https://openrouter.ai/models. SDK exceptions (timeout, auth, rate limit,
+  connection, HTTP status) are classified into `ProviderTimeout` /
+  `ProviderUnavailable` in the shared `OpenAILLMClient._classify()` so the agent
+  falls back cleanly instead of crashing. Only reached when `LLM_PROVIDER=openrouter`
+  **and** `settings.offline_first` is `False` (`DEMO_MODE=false` and
+  `ENVIRONMENT` not `demo`) — otherwise the mock/local path runs, unchanged.
 
 ## Adding a hackathon provider
 

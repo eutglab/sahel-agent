@@ -10,6 +10,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from app.core.security import scrub_secrets
+
 
 # --------------------------------------------------------------------------- #
 # Honesty taxonomy — attached to every tool and provider.
@@ -130,7 +132,11 @@ class AgentTrace(BaseModel):
     tool_calls: List[ToolCallRecord] = Field(default_factory=list)
 
     def event(self, label: str, status: str = "info", detail: str = "") -> None:
-        self.events.append(TraceEvent(label=label, status=status, detail=detail))
+        # Scrub at insertion so nothing credential-looking ever reaches the
+        # live UI trace, the run log (JSONL/SQLite), or the benchmark output.
+        self.events.append(
+            TraceEvent(label=scrub_secrets(label), status=status, detail=scrub_secrets(detail))
+        )
 
     def as_lines(self) -> List[str]:
         icon = {"info": "•", "ok": "✓", "warn": "!", "error": "✗"}

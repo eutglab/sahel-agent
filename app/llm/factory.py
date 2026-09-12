@@ -49,6 +49,14 @@ def get_llm_client(provider: Optional[str] = None) -> LLMClient:
         except Exception as exc:  # noqa: BLE001
             logger.warning("hackathon client unavailable (%s); using mock", exc)
             client = MockLLMClient()
+    elif name == "openrouter":
+        try:
+            from app.llm.providers.openrouter import OpenRouterLLMClient
+
+            client = OpenRouterLLMClient()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("openrouter client unavailable (%s); using mock", exc)
+            client = MockLLMClient()
     else:
         logger.warning("unknown LLM provider '%s'; using mock", name)
         client = MockLLMClient()

@@ -9,7 +9,7 @@ audit.
 | **Agentic behaviour** | 8 | Perceives modalities, selects tools dynamically (L1 LLM loop with re-ask, L2 rule planner), skips tools for absent modalities, backbone always runs. `tests/test_agent.py`, `tests/test_adversarial.py` | Default demo path is rule-based (L2), not LLM — because the demo runs keyless | L1 loop is real and covered by a test with a fake LLM; documented plainly in `ai_transparency.md` |
 | **Tool calling** | 8 | `BaseTool.execute` runs a provider fallback chain, records provider + source note; LLM tool calls validated against the registry; invalid names dropped | LLM could still under-select | Added rule-based fallback when the LLM picks no valid tool (`fix(agent)`) |
 | **Multimodality** | 8 | `calculate_risk` consumes the merged bundle; converging evidence raises confidence, diverging lowers it and forces a "provisional" finding | Fusion is heuristic weighting, not learned | Cross-check hardened: no phantom sensor references; contradiction always cuts confidence |
-| **Reliability** | 9 | 3-level fallback; every tool has a terminal provider; malformed output / provider crash / invalid tool call all handled; 75 tests, `pytest -m offline` green | — | Regression tests added for each failure mode |
+| **Reliability** | 9 | 3-level fallback; every tool has a terminal provider; malformed output / provider crash / invalid tool call all handled; 104 tests, `pytest -m offline` green | — | Regression tests added for each failure mode |
 | **Offline capability** | 9 | `pytest -m offline` blocks all sockets and runs all 5 scenarios; `WEATHER_PROVIDER=open_meteo` self-skips offline | Real weather/vision/LLM obviously need network | By design; clearly labelled |
 | **UX** | 7 | Streamlit: sidebar runtime status, one-click scenario load, live trace, 6 result tabs, Run details, `DEMO_JUDGE_MODE` one-button setup | Streamlit styling is clean but not bespoke; some agronomy jargon remains | Added input bounds, "insufficient evidence" situation line, sensor-vs-combined-risk caption, judge mode |
 | **Innovation** | 7 | Live `register_external_tool`; honesty taxonomy in the UI; resilience as design; fusion that changes the output | Concepts are well-executed rather than novel research | Made all six innovation points demonstrable (`docs/innovation.md`) |
@@ -28,6 +28,6 @@ audit.
 | Warm agent run | ~7–18 ms (mean ~11 ms, n=20) |
 | Benchmark, 5 scenarios | 5/5 success, 10–42 ms each, completeness 1.00 |
 | Streamlit import | ~0.4 s |
-| Test suite | 75 passed in ~0.8 s |
+| Test suite | 104 passed in ~5 s |
 
 Real-provider (LLM / live weather) latency and cost: **not measured** — needs a key.

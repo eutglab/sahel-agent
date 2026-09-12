@@ -44,6 +44,23 @@ def test_llm_client_is_mock_in_demo_mode(block_network):
     assert get_llm_client().is_mock
 
 
+def test_openrouter_never_touches_network_when_offline(block_network, monkeypatch):
+    """Even with LLM_PROVIDER=openrouter configured and an API key set, offline
+    /demo mode must never let the agent reach it — see `use_llm` in agent.py."""
+    from app.agent.agent import SahelAgent
+    from app.llm.providers.openrouter import OpenRouterLLMClient
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "unused-in-offline-mode")
+    agent = SahelAgent(llm=OpenRouterLLMClient())
+    ai = AgentInput(
+        sensors=SensorReadings(temperature_c=37, soil_moisture_pct=18, growth_stage="flowering"),
+        location=Location(label="Fictional Site Alpha", latitude=14.5, longitude=-4.2),
+    )
+    result = agent.analyze(ai)
+    assert result.reasoning_mode == "deterministic"
+    assert result.recommendation is not None
+
+
 def test_healthcheck_module_runs_offline(block_network, capsys):
     import healthcheck
 

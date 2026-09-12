@@ -90,6 +90,11 @@ _STRINGS: dict[str, dict[str, str]] = {
     "chk_evidence_skip": {"en": "Evidence not needed", "fr": "Preuves non nécessaires"},
     "chk_reco": {"en": "Recommendation generated", "fr": "Recommandation générée"},
     "technical_details_header": {"en": "Technical Details", "fr": "Détails techniques"},
+    "technical_details_sub": {
+        "en": "Everything the agent actually did — tool selection, cross-checks, providers, and raw outputs.",
+        "fr": "Tout ce que l'agent a réellement fait — sélection des outils, vérifications croisées, "
+              "fournisseurs et sorties brutes.",
+    },
     "chat_button": {"en": "💬 Ask the Agent", "fr": "💬 Demander à l'agent"},
     "chat_title": {"en": "Ask the Agent", "fr": "Demander à l'agent"},
     "chat_subtitle": {
@@ -121,6 +126,13 @@ _STRINGS: dict[str, dict[str, str]] = {
     "chat_context_available": {"en": "Analysis context available", "fr": "Contexte d'analyse disponible"},
     "chat_thinking": {"en": "Thinking…", "fr": "Réflexion…"},
     "chat_checking_evidence": {"en": "🔎 Checking external evidence…", "fr": "🔎 Vérification des preuves externes…"},
+    "chat_answered_by_llm": {
+        "en": "Answered by {provider} (real LLM)", "fr": "Répondu par {provider} (véritable LLM)",
+    },
+    "chat_answered_by_router": {
+        "en": "Answered by local reasoning (no LLM call — deterministic, grounded on the analysis)",
+        "fr": "Répondu par le raisonnement local (aucun LLM appelé — déterministe, ancré sur l'analyse)",
+    },
     "chat_lang_note": {
         "en": "",
         "fr": "Réponses sans clé IA configurée : affichées en anglais pour rester fidèles aux données. Les suggestions ci-dessous restent en français.",
@@ -141,6 +153,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     "sidebar_load_scenario": {"en": "Load demo scenario", "fr": "Charger un scénario de démo"},
     "load": {"en": "Load", "fr": "Charger"},
     "reset": {"en": "Reset", "fr": "Réinitialiser"},
+    "empty_state_headline": {"en": "Ready when you are", "fr": "Prêt quand vous l'êtes"},
     "empty_state": {
         "en": "Load a demo scenario or fill the form, then press **ANALYZE**.",
         "fr": "Chargez un scénario de démo ou remplissez le formulaire, puis appuyez sur **ANALYZE**.",
@@ -160,6 +173,24 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "🔎 Offline sample (set EXA_API_KEY for live sources)",
         "fr": "🔎 Échantillon hors-ligne (renseignez EXA_API_KEY pour des sources en direct)",
     },
+    "tab_autonomy": {"en": "Agent Capability & Autonomy", "fr": "Capacités et autonomie de l'agent"},
+    "autonomy_intro": {
+        "en": (
+            "What the agent actually decided and did on this run — no invented score, "
+            "only what really executed."
+        ),
+        "fr": (
+            "Ce que l'agent a réellement décidé et fait lors de cette analyse — aucun score "
+            "inventé, seulement ce qui s'est vraiment exécuté."
+        ),
+    },
+    "autonomy_mode": {"en": "Current operating mode", "fr": "Mode de fonctionnement actuel"},
+    "autonomy_level": {"en": "Autonomy level", "fr": "Niveau d'autonomie"},
+    "autonomy_active": {"en": "Active capabilities", "fr": "Capacités actives"},
+    "autonomy_unavailable": {"en": "Unavailable capabilities", "fr": "Capacités indisponibles"},
+    "autonomy_why": {"en": "Why this level?", "fr": "Pourquoi ce niveau ?"},
+    "autonomy_constraints": {"en": "Constraints & limitations", "fr": "Contraintes et limites"},
+    "autonomy_activity": {"en": "What happened, step by step", "fr": "Ce qui s'est passé, étape par étape"},
 }
 
 

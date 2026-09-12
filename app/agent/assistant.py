@@ -279,10 +279,16 @@ def answer(
             try:
                 resp = client.complete(_SYSTEM_PRE + lang_instruction, question, max_tokens=200)
                 if resp.text.strip():
-                    return {"text": resp.text.strip(), "evidence": [], "used_tool": None}
+                    return {
+                        "text": resp.text.strip(), "evidence": [], "used_tool": None,
+                        "source": "llm", "provider": client.name,
+                    }
             except Exception as exc:  # noqa: BLE001 - never break the panel
                 logger.warning("assistant LLM path failed (%s); using deterministic router", exc)
-        return {"text": _route_pre_analysis(question), "evidence": [], "used_tool": None}
+        return {
+            "text": _route_pre_analysis(question), "evidence": [], "used_tool": None,
+            "source": "router", "provider": None,
+        }
 
     ctx = _context(result)
     used_tool = None
@@ -299,8 +305,14 @@ def answer(
             prompt = "STRUCTURED ANALYSIS:\n" + json.dumps(ctx, default=str)[:5000] + f"\n\nQUESTION: {question}"
             resp = client.complete(_SYSTEM_READY + lang_instruction, prompt, max_tokens=250)
             if resp.text.strip():
-                return {"text": resp.text.strip(), "evidence": ctx["evidence"], "used_tool": used_tool}
+                return {
+                    "text": resp.text.strip(), "evidence": ctx["evidence"], "used_tool": used_tool,
+                    "source": "llm", "provider": client.name,
+                }
         except Exception as exc:  # noqa: BLE001 - never break the panel
             logger.warning("assistant LLM path failed (%s); using deterministic router", exc)
 
-    return {"text": _route_ready(question, ctx), "evidence": ctx["evidence"], "used_tool": used_tool}
+    return {
+        "text": _route_ready(question, ctx), "evidence": ctx["evidence"], "used_tool": used_tool,
+        "source": "router", "provider": None,
+    }

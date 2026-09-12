@@ -21,7 +21,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from app.core.config import settings  # noqa: E402
 from app.core.schemas import HealthState, MaturityStatus  # noqa: E402
+from app.llm.factory import get_llm_client  # noqa: E402
 from app.tools.registry import get_registry  # noqa: E402
 
 CANNED = {
@@ -39,8 +41,22 @@ CANNED = {
 def main() -> int:
     print("SAHEL AGENT — INTEGRATION PRE-FLIGHT")
     print("=" * 60)
-    reg = get_registry(refresh=True)
     hard_fail = 0
+
+    # LLM reasoning path — not a registry tool, checked separately. Never a
+    # hard failure: an unconfigured/broken real LLM just means the agent stays
+    # on the deterministic planner (see app/agent/agent.py `use_llm`).
+    print(f"\n[llm]  configured provider = {settings.llm_provider}  "
+          f"offline_first = {settings.offline_first}")
+    try:
+        client = get_llm_client(settings.llm_provider)
+        h = client.health_check()
+        state = h.state.value if isinstance(h.state, HealthState) else str(h.state)
+        print(f"  health           : {state}  ({h.detail})")
+    except Exception as exc:  # noqa: BLE001
+        print(f"  health           : FAIL ({exc})")
+
+    reg = get_registry(refresh=True)
 
     for tool in reg.tools():
         print(f"\n[{tool.name}]  status={tool.status.value}")

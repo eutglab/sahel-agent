@@ -71,6 +71,53 @@ def test_needs_live_evidence_true_only_when_pipeline_has_no_evidence_yet(multipl
     assert needs_live_evidence("Did you check evidence?", result) is False
 
 
+def test_router_answers_are_labelled_as_such_not_a_real_llm():
+    """Regression: users must always be able to tell whether a chat answer
+    came from a real LLM or the deterministic router — never ambiguous."""
+    resp = answer("What can you analyze?", None)
+    assert resp["source"] == "router"
+    assert resp["provider"] is None
+
+
+def test_router_answers_are_labelled_post_analysis_too(multiple_risks_input):
+    result = SahelAgent().analyze(multiple_risks_input)
+    resp = answer("Why is the risk high?", result, multiple_risks_input)
+    assert resp["source"] == "router"
+
+
+def test_real_llm_answers_are_labelled_with_provider_name(monkeypatch, multiple_risks_input):
+    from app.core.schemas import HealthState, HealthStatus, MaturityStatus
+    from app.llm.base import LLMClient, LLMResponse
+
+    class FakeLLM(LLMClient):
+        name = "fake-provider"
+        status = MaturityStatus.INTEGRATION_READY  # -> not is_mock
+
+        def complete(self, system, user, *, max_tokens=800):
+            return LLMResponse(text="A real model answer, not a template.")
+
+        def complete_with_tools(self, *a, **k):
+            raise NotImplementedError
+
+        def analyze_image(self, b, p):
+            raise NotImplementedError
+
+        def health_check(self):
+            return HealthStatus(component="llm:fake", state=HealthState.READY)
+
+    monkeypatch.setattr("app.agent.assistant.get_llm_client", lambda: FakeLLM())
+    monkeypatch.setattr("app.agent.assistant.settings", type("S", (), {"offline_first": False})())
+
+    resp_pre = answer("What can you analyze?", None)
+    assert resp_pre["source"] == "llm"
+    assert resp_pre["provider"] == "fake-provider"
+
+    result = SahelAgent().analyze(multiple_risks_input)
+    resp_post = answer("Why is the risk high?", result, multiple_risks_input)
+    assert resp_post["source"] == "llm"
+    assert resp_post["provider"] == "fake-provider"
+
+
 def test_chat_state_survives_across_reruns_via_session_result(multiple_risks_input):
     """A second, unrelated question must see the SAME analysis context — this is
     what 'one agent, shared state' means in practice: no re-analysis, no reset."""

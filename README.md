@@ -95,7 +95,7 @@ Full detail: [`docs/architecture.md`](docs/architecture.md).
 - EN / FR / Bambara language switcher for the UI chrome ([`docs/i18n.md`](docs/i18n.md) — scope disclosed honestly)
 - Risk-first result layout (assessment → why → actions → evidence) with technical detail behind progressive disclosure, not up front
 - **Ask the Agent** — a grounded Q&A panel over the current analysis; deterministic by default, a real LLM when one is configured, and able to trigger `search_web` itself if a question needs evidence the pipeline didn't already fetch
-- 75 automated tests incl. an offline suite that blocks all sockets
+- 104 automated tests incl. an offline suite that blocks all sockets
 
 ## Tools
 
@@ -137,12 +137,44 @@ Key switches:
 |---|---|---|
 | `ENVIRONMENT` | `demo` | `demo` / `hackathon` / `real` |
 | `DEMO_MODE` | `true` | prefer local/mock providers, no keys |
-| `LLM_PROVIDER` | `mock` | `mock` / `anthropic` / `openai` / `hackathon` |
+| `LLM_PROVIDER` | `mock` | `mock` / `anthropic` / `openai` / `openrouter` / `hackathon` |
 | `WEATHER_PROVIDER` | `local` | `open_meteo` / `local` / `mock` / `hackathon` |
 | `WEB_SEARCH_PROVIDER` | `exa` | `exa` / `mock`; needs `EXA_API_KEY` for live evidence |
 | `*_FALLBACK_CHAIN` | see file | ordered provider fallback per capability |
 
 Secrets go in `.env` only (gitignored). Never in code. See [`SECURITY.md`](SECURITY.md).
+
+### Running with a real LLM (OpenRouter)
+
+By default the agent reasons with the free, offline `mock` LLM. To let it use a
+real model via [OpenRouter](https://openrouter.ai) for LLM tool-calling (L1) and
+for **Ask the Agent**'s grounded answers:
+
+```bash
+pip install openai            # OpenRouter's endpoint is OpenAI-compatible
+```
+
+```env
+# .env
+ENVIRONMENT=real
+DEMO_MODE=false
+LLM_PROVIDER=openrouter
+OPENROUTER_API_KEY=your_key_here
+OPENROUTER_MODEL=your_model_here   # pick one from https://openrouter.ai/models
+```
+
+Both `DEMO_MODE=false` **and** `ENVIRONMENT` != `demo` are required — either one
+left at its default keeps the agent fully offline (`settings.offline_first`),
+which is the deliberate safety net: a missing/invalid key or model, a timeout,
+an HTTP error, or an empty/malformed response all fall back to the deterministic
+planner / mock automatically, never a crash. Verify before a demo:
+
+```bash
+python scripts/test_integrations.py   # reports OpenRouter health, never prints the key
+```
+
+Deterministic risk calculation (`calculate_risk`) never delegates to the LLM —
+OpenRouter only ever affects tool selection and wording, never the risk numbers.
 
 ## Demo
 
@@ -177,7 +209,7 @@ print(result.recommendation["priority"], result.recommendation["main_finding"])
 ## Testing
 
 ```bash
-make test              # pytest -m "not integration"   (75 tests)
+make test              # pytest -m "not integration"   (104 tests)
 pytest -m offline      # offline guarantee (sockets blocked)
 python healthcheck.py
 python scripts/test_integrations.py

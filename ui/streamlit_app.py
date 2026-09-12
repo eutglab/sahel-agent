@@ -11,7 +11,6 @@ for what actually produces each number shown here — this file only renders it.
 from __future__ import annotations
 
 import sys
-import time
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -28,77 +27,213 @@ from app.agent.assistant import (  # noqa: E402
     answer as assistant_answer,
     needs_live_evidence,
 )
+from app.agent.autonomy import compute_autonomy  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.i18n import LANGUAGES, PARTIAL_NOTICE, t  # noqa: E402
 from app.core.schemas import AgentInput, GrowthStage, Location, SensorReadings  # noqa: E402
 from app.core.security import validate_image_upload  # noqa: E402
 from app.data.demo_data import get_scenario, list_scenarios, load_scenario_image  # noqa: E402
+from app.tools.registry import get_registry  # noqa: E402
 
 st.set_page_config(page_title="SAHEL Agent", page_icon="🌍", layout="wide")
 
 
 def _css(theme: str) -> str:
     """Force a consistent light/dark look regardless of the browser's own
-    Streamlit theme setting — driven by the toggle button, not guessed."""
+    Streamlit theme setting — driven by the toggle button, not guessed.
+
+    Design language: one accent (emerald), one neutral ramp, a restrained
+    spacing/radius/shadow scale — simple on the surface, precise underneath.
+    Pure styling: no component here changes what data is shown, only how.
+    """
     if theme == "dark":
-        bg, bg2, text, sub, border = "#0e1117", "#1a1d24", "#e5e7eb", "#9ca3af", "#30343c"
-        hero_bg = "#171b23"
+        bg, bg2, card, text, sub, faint, border = (
+            "#0b0f14", "#121821", "#151c26", "#eef1f5", "#9aa5b1", "#6b7684", "#232b36"
+        )
+        accent, accent_soft, accent_text = "#34d399", "#0f2a22", "#6ee7b7"
+        shadow = "0 1px 2px rgba(0,0,0,.4), 0 8px 24px -8px rgba(0,0,0,.5)"
     else:
-        bg, bg2, text, sub, border = "#ffffff", "#f8fafc", "#111827", "#6b7280", "#e5e7eb"
-        hero_bg = "#f8fafc"
+        bg, bg2, card, text, sub, faint, border = (
+            "#ffffff", "#f7f8fa", "#ffffff", "#0f172a", "#586174", "#8a93a3", "#e8eaee"
+        )
+        accent, accent_soft, accent_text = "#059669", "#ecfdf5", "#047857"
+        shadow = "0 1px 2px rgba(15,23,42,.04), 0 8px 24px -12px rgba(15,23,42,.12)"
     return f"""
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-    :root {{ --background-color: {bg}; --secondary-background-color: {bg2}; --text-color: {text}; }}
-    .stApp {{ background-color: {bg} !important; color: {text} !important; }}
-    [data-testid="stSidebar"] {{ background-color: {bg2} !important; }}
+    :root {{
+        --bg: {bg}; --bg2: {bg2}; --card: {card}; --text: {text}; --sub: {sub}; --faint: {faint};
+        --border: {border}; --accent: {accent}; --accent-soft: {accent_soft}; --accent-text: {accent_text};
+        --shadow: {shadow}; --radius: 14px; --radius-sm: 9px;
+        --background-color: {bg}; --secondary-background-color: {bg2}; --text-color: {text};
+    }}
+    html, body, .stApp {{
+        background-color: var(--bg) !important; color: var(--text) !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    }}
+    [data-testid="stSidebar"] {{ background-color: var(--bg2) !important; border-right: 1px solid var(--border); }}
+    [data-testid="stSidebar"] * {{ font-family: 'Inter', sans-serif !important; }}
     [data-testid="stHeader"] {{ background-color: transparent !important; }}
-    .stApp, .stApp p, .stApp label, .stApp span, .stApp li {{ color: {text}; }}
-    .block-container {{padding-top: 1.6rem; max-width: 1100px;}}
-    h1, h2, h3 {{letter-spacing: -0.01em;}}
-    .sahel-sub {{color: {sub} !important; font-size: 1.02rem; margin-top: -0.5rem;}}
-    .trace-line {{font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem; padding: 1px 0; color: {sub};}}
-    .badge {{display:inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.74rem;
-            font-weight: 600; margin-right: 6px;}}
-    .badge-low {{background:#dcfce7; color:#166534;}}
-    .badge-moderate {{background:#fef9c3; color:#854d0e;}}
-    .badge-medium {{background:#fef9c3; color:#854d0e;}}
-    .badge-high {{background:#fee2e2; color:#991b1b;}}
-    .badge-unknown {{background:#e5e7eb; color:#374151;}}
-    .small {{color: {sub} !important; font-size:0.82rem;}}
-    hr {{border-color: {border} !important;}}
+    .stApp, .stApp p, .stApp label, .stApp span, .stApp li {{ color: var(--text); }}
+    .block-container {{ padding-top: 1.4rem; padding-bottom: 3rem; max-width: 1080px; }}
 
-    /* --- risk hero ------------------------------------------------------ */
-    .risk-hero {{background:{hero_bg}; border:1px solid {border}; border-radius:12px;
-                 padding:20px 24px; margin: 10px 0 16px;}}
-    .risk-eyebrow {{font-size:0.72rem; letter-spacing:0.08em; color:{sub}; font-weight:600; margin-bottom:8px;}}
-    .risk-badge-big {{font-size:1.9rem; font-weight:700; letter-spacing:-0.01em; display:inline-block; margin-right:14px;}}
-    .risk-badge-big.low {{color:#166534;}}
-    .risk-badge-big.moderate, .risk-badge-big.medium {{color:#854d0e;}}
-    .risk-badge-big.high {{color:#991b1b;}}
-    .risk-badge-big.unknown {{color:{sub};}}
-    .risk-situation {{color:{text}; font-size:0.98rem; margin-top:6px;}}
-    .risk-driver {{font-size:1.02rem; font-weight:600; margin-top:10px; color:{text};}}
+    h1, h2, h3, h4 {{ letter-spacing: -0.02em; font-weight: 700; }}
+    h3 {{ font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; }}
+    h4 {{ font-size: 0.95rem; font-weight: 700; }}
 
-    /* --- indicators ------------------------------------------------------ */
-    .indicator {{border:1px solid {border}; border-radius:10px; padding:10px 14px; text-align:left;}}
-    .indicator .ind-label {{font-size:0.78rem; color:{sub}; margin-bottom:4px;}}
+    /* buttons: one confident primary, quiet secondaries */
+    .stButton > button {{
+        border-radius: var(--radius-sm) !important; font-weight: 600 !important;
+        border: 1px solid var(--border) !important; transition: transform .05s ease, box-shadow .15s ease;
+    }}
+    .stButton > button:hover {{ border-color: var(--accent) !important; }}
+    .stButton > button[kind="primary"] {{
+        background: var(--accent) !important; border-color: var(--accent) !important;
+        color: #ffffff !important; box-shadow: var(--shadow); padding: 0.65rem 1rem !important;
+        font-size: 0.98rem !important;
+    }}
+    .stButton > button[kind="primary"]:hover {{ filter: brightness(1.06); transform: translateY(-1px); }}
+    .stButton > button[kind="secondary"] {{ background: var(--card) !important; color: var(--text) !important; }}
 
-    /* --- checklist -------------------------------------------------------- */
-    .checklist {{font-size:0.86rem; line-height:1.9; color:{text};}}
-    .checklist .ok {{color:#166534; font-weight:600;}}
-    .checklist .skip {{color:{sub};}}
+    /* top bar */
+    .sahel-brand {{ display:flex; align-items:center; gap:10px; height: 42px; }}
+    .sahel-brand .mark {{
+        width:32px; height:32px; border-radius:9px; background: var(--accent);
+        display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;
+        box-shadow: var(--shadow);
+    }}
+    .sahel-brand .word {{ font-weight:800; font-size:1.15rem; letter-spacing:-0.02em; color: var(--text); }}
+    .sahel-sub {{ color: var(--sub) !important; font-size: 1rem; margin-top: 2px; margin-bottom: 0; font-weight: 450; }}
 
-    /* --- chat --------------------------------------------------------------- */
-    .chat-bubble-user {{background:{hero_bg}; border:1px solid {border}; border-radius:10px 10px 2px 10px;
-                         padding:8px 12px; margin:4px 0; font-size:0.9rem;}}
-    .chat-bubble-agent {{background:transparent; border:1px solid {border}; border-radius:10px 10px 10px 2px;
-                          padding:8px 12px; margin:4px 0 12px; font-size:0.9rem;}}
+    /* generic surfaces */
+    .sahel-card {{
+        background: var(--card); border:1px solid var(--border); border-radius: var(--radius);
+        padding: 20px 22px; box-shadow: var(--shadow);
+    }}
+    .small {{ color: var(--sub) !important; font-size:0.82rem; }}
+    .faint {{ color: var(--faint) !important; font-size: 0.78rem; }}
+    hr {{ border-color: var(--border) !important; margin: 1.1rem 0 !important; }}
+    [data-testid="stExpander"] {{ border:1px solid var(--border) !important; border-radius: var(--radius-sm) !important;
+                                   background: var(--card); }}
+    [data-testid="stFileUploaderDropzone"] {{ border-radius: var(--radius-sm) !important;
+                                               background: var(--bg2) !important; border-color: var(--border) !important; }}
+
+    /* form controls: match the theme instead of Streamlit's fixed light chrome */
+    input, textarea, select,
+    [data-baseweb="input"], [data-baseweb="textarea"], [data-baseweb="select"] > div,
+    [data-baseweb="base-input"] {{
+        background-color: var(--bg2) !important; color: var(--text) !important;
+        border-color: var(--border) !important;
+    }}
+    [data-baseweb="select"] svg {{ fill: var(--sub) !important; }}
+    ::placeholder {{ color: var(--faint) !important; opacity: 1 !important; }}
+    [data-testid="stFileUploader"] section {{ background: transparent !important; }}
+    [data-testid="stFileUploaderDropzone"] button {{ background: var(--card) !important; color: var(--text) !important; }}
+
+    /* badges */
+    .badge {{ display:inline-flex; align-items:center; gap:5px; padding: 3px 11px; border-radius: 999px;
+              font-size: 0.72rem; font-weight: 700; letter-spacing: 0.01em; margin-right: 6px; }}
+    .badge-low {{ background:#dcfce7; color:#166534; }}
+    .badge-moderate, .badge-medium {{ background:#fef3c7; color:#92400e; }}
+    .badge-high {{ background:#fee2e2; color:#991b1b; }}
+    .badge-unknown {{ background: var(--border); color: var(--sub); }}
+
+    /* section eyebrow (small caps label above a section) */
+    .eyebrow {{ font-size:0.7rem; letter-spacing:0.09em; color: var(--sub); font-weight:700;
+                text-transform: uppercase; margin-bottom:8px; }}
+
+    /* risk hero: the one thing a judge must see in 3 seconds */
+    .risk-hero {{
+        background: linear-gradient(180deg, var(--card) 0%, var(--bg2) 100%);
+        border:1px solid var(--border); border-radius: var(--radius);
+        padding:24px 26px; margin: 12px 0 18px; box-shadow: var(--shadow); position: relative; overflow:hidden;
+    }}
+    .risk-hero::before {{
+        content:""; position:absolute; left:0; top:0; bottom:0; width:5px;
+    }}
+    .risk-hero.low::before {{ background:#16a34a; }}
+    .risk-hero.moderate::before, .risk-hero.medium::before {{ background:#d97706; }}
+    .risk-hero.high::before {{ background:#dc2626; }}
+    .risk-hero.unknown::before {{ background: var(--border); }}
+    .risk-eyebrow {{ font-size:0.72rem; letter-spacing:0.09em; color: var(--sub); font-weight:700;
+                      margin-bottom:10px; text-transform: uppercase; }}
+    .risk-badge-big {{ font-size:2.1rem; font-weight:800; letter-spacing:-0.02em; display:inline-block; margin-right:14px; }}
+    .risk-badge-big.low {{ color:#16a34a; }}
+    .risk-badge-big.moderate, .risk-badge-big.medium {{ color:#d97706; }}
+    .risk-badge-big.high {{ color:#dc2626; }}
+    .risk-badge-big.unknown {{ color: var(--sub); }}
+    .risk-situation {{ color: var(--text); font-size:1rem; margin-top:8px; }}
+    .risk-driver {{ font-size:1rem; font-weight:600; margin-top:12px; color: var(--text); }}
+
+    /* three-up indicators */
+    .indicator {{ border:1px solid var(--border); background: var(--card); border-radius: var(--radius-sm);
+                  padding:14px 16px; text-align:left; box-shadow: var(--shadow); }}
+    .indicator .ind-label {{ font-size:0.76rem; color: var(--sub); margin-bottom:7px; font-weight:600; }}
+
+    /* step checklist: reads like a receipt of real work done */
+    .steps {{ display:flex; flex-direction:column; gap:2px; }}
+    .step {{ display:flex; align-items:flex-start; gap:10px; padding:7px 0; font-size:0.88rem; }}
+    .step .dot {{ width:18px; height:18px; border-radius:50%; flex-shrink:0; display:flex; align-items:center;
+                  justify-content:center; font-size:11px; margin-top:1px; }}
+    .step.ok .dot {{ background: var(--accent-soft); color: var(--accent-text); }}
+    .step.skip .dot {{ background: var(--border); color: var(--sub); }}
+    .step.ok span.label {{ color: var(--text); font-weight: 500; }}
+    .step.skip span.label {{ color: var(--sub); }}
+
+    /* technical details: same rigor, framed as "inside the agent" */
+    .tech-panel {{ border:1px solid var(--border); border-radius: var(--radius); background: var(--card);
+                   padding: 22px 24px; box-shadow: var(--shadow); margin-top: 6px; }}
+    .tech-kicker {{ font-size:0.78rem; color: var(--sub); margin-bottom: 4px; }}
+    [data-baseweb="tab-list"] {{ gap: 4px; border-bottom: 1px solid var(--border) !important; }}
+    [data-baseweb="tab"] {{ font-weight: 600 !important; font-size: 0.86rem !important; }}
+
+    /* native bordered containers -> match the card language */
+    [data-testid="stVerticalBlockBorderWrapper"] > div,
+    div[data-testid="stContainer"] {{ border-radius: var(--radius) !important; }}
+    [data-testid="stVerticalBlockBorderWrapper"] {{ box-shadow: var(--shadow); border-radius: var(--radius) !important; }}
+    pre, code {{ font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace !important; }}
+    .stCodeBlock {{ border-radius: var(--radius-sm) !important; }}
+
+    /* mini-stats: like st.metric but never truncates a long value */
+    .mini-stat-row {{ display:flex; gap:28px; flex-wrap:wrap; margin: 8px 0 6px; }}
+    .mini-stat {{ min-width: 100px; }}
+    .mini-stat .msv-label {{ font-size:0.72rem; color: var(--sub); font-weight:700; margin-bottom:4px;
+                              text-transform:uppercase; letter-spacing:0.04em; }}
+    .mini-stat .msv-value {{ font-size:1.2rem; font-weight:700; color: var(--text); line-height:1.3; }}
+
+    /* evidence cards */
+    .ev-card {{ border:1px solid var(--border); border-radius: var(--radius-sm); padding:12px 14px;
+                margin-bottom:8px; background: var(--card); }}
+    .ev-tag {{ font-size:0.65rem; font-weight:800; letter-spacing:0.04em; padding:2px 7px; border-radius:5px;
+               background: var(--accent-soft); color: var(--accent-text); margin-right:8px; }}
+
+    /* empty state */
+    .empty-state {{ border:1.5px dashed var(--border); border-radius: var(--radius); padding: 40px 28px;
+                     text-align:center; color: var(--sub); background: var(--bg2); }}
+    .empty-state .glyph {{ font-size: 2rem; margin-bottom: 10px; }}
+    .empty-state .headline {{ color: var(--text); font-weight: 700; font-size: 1rem; margin-bottom: 4px; }}
+
+    /* Ask the Agent dialog: st.dialog renders in a portal outside .stApp,
+       so it needs its own theme pass rather than inheriting the cascade. */
+    [role="dialog"] {{ background: var(--bg) !important; border: 1px solid var(--border) !important; }}
+    [role="dialog"] * {{ color: var(--text); }}
+    [role="dialog"] input {{ background: var(--bg2) !important; color: var(--text) !important; }}
+
+    /* chat */
+    .chat-bubble-user {{ background: var(--accent-soft); border:1px solid transparent; color: var(--accent-text);
+                          border-radius: 12px 12px 3px 12px; padding:9px 13px; margin:4px 0 4px auto;
+                          font-size:0.9rem; max-width: 92%; width: fit-content; }}
+    .chat-bubble-agent {{ background: var(--bg2); border:1px solid var(--border); color: var(--text);
+                           border-radius: 12px 12px 12px 3px; padding:9px 13px; margin:4px auto 2px 0;
+                           font-size:0.9rem; max-width: 92%; width: fit-content; }}
     </style>
     """
 
 
 st.session_state.setdefault("theme", "light")
-st.markdown(_css(st.session_state["theme"]), unsafe_allow_html=True)
+st.html(_css(st.session_state["theme"]))
 
 # --- DEMO_JUDGE_MODE: preload the strongest scenario once, zero clicks to set up.
 # Judges always see English regardless of any language previously picked in this
@@ -115,10 +250,17 @@ st.session_state.setdefault("lang", "en")
 st.session_state.setdefault("chat_history", [])
 st.session_state.setdefault("show_details", False)
 st.session_state.setdefault("show_evidence", False)
+lang = st.session_state["lang"]
 
-# --- Header bar: theme + language + Ask the Agent, all secondary to the ------
-# --- product itself — none of this competes visually with Analyze Field. ----
+# --- Top bar: brand on the left, everything else (theme / language / chat) --
+# --- quiet utility icons on the right — none of it competes with ANALYZE. ---
 _bar_l, _bar_theme, _bar_lang, _bar_chat = st.columns([4.2, 1, 1, 1.6])
+with _bar_l:
+    st.markdown(
+        f'<div class="sahel-brand"><div class="mark">🌍</div>'
+        f'<div class="word">{t("app_title", lang)}</div></div>',
+        unsafe_allow_html=True,
+    )
 with _bar_theme:
     _is_dark = st.session_state["theme"] == "dark"
     if st.button("☀️" if _is_dark else "🌙", width="stretch", key="_theme_toggle",
@@ -136,6 +278,9 @@ with _bar_lang:
         st.rerun()
 lang = st.session_state["lang"]
 _chat_slot = _bar_chat  # button rendered below, once `result` is known
+st.markdown(f'<p class="sahel-sub">{t("app_tagline", lang)}</p>', unsafe_allow_html=True)
+if lang == "bm":
+    st.caption(f"ℹ️ {PARTIAL_NOTICE}")
 
 
 def _t_or(key: str, default: str) -> str:
@@ -184,11 +329,47 @@ def _why_reasons(risk: dict, max_n: int = 4) -> list[str]:
     return out
 
 
+def _llm_status_line() -> str:
+    """One honest sentence about the reasoning path actually in effect — never
+    a raw stack trace, never a secret. Shown only in Technical Details."""
+    if settings.offline_first:
+        return "Local mode — offline/demo, no external LLM is called."
+    if settings.llm_provider == "mock":
+        return "Local mode — mock reasoning (no real LLM provider configured)."
+    from app.llm.factory import get_llm_client
+
+    client = get_llm_client(settings.llm_provider)
+    health = client.health_check()
+    label = client.name.capitalize()
+    if health.state.value == "READY":
+        return f"{label} connected."
+    return f"{label} unavailable ({health.detail}) — local fallback active."
+
+
 def _evidence_domain(url: str) -> str:
     try:
         return urlparse(url).netloc.replace("www.", "") or url
     except Exception:  # noqa: BLE001
         return url
+
+
+def _bold(text: str) -> str:
+    """`**x**` -> `<strong>x</strong>` — for translated strings embedded inside
+    a raw HTML block, where markdown's own ** syntax doesn't apply."""
+    import re
+
+    return re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
+
+
+def _mini_stats(pairs: list[tuple[str, str]]) -> None:
+    """Like a row of st.metric, but wraps instead of truncating long values
+    (e.g. a full autonomy level sentence) — same data, just legible."""
+    cells = "".join(
+        f'<div class="mini-stat"><div class="msv-label">{label}</div>'
+        f'<div class="msv-value">{value}</div></div>'
+        for label, value in pairs
+    )
+    st.markdown(f'<div class="mini-stat-row">{cells}</div>', unsafe_allow_html=True)
 
 
 @st.dialog(t("chat_title", lang))
@@ -201,9 +382,15 @@ def _ask_agent_dialog(result, agent_input):
     if not history:
         st.markdown(t("chat_welcome_pre", lang))
 
-    for role, text_ in history:
+    for entry in history:
+        role, text_, meta = entry if len(entry) == 3 else (*entry, None)
         cls = "chat-bubble-user" if role == "user" else "chat-bubble-agent"
         st.markdown(f'<div class="{cls}">{text_}</div>', unsafe_allow_html=True)
+        if role == "agent" and meta:
+            if meta.get("source") == "llm":
+                st.caption(f"🤖 {t('chat_answered_by_llm', lang, provider=meta.get('provider', '').capitalize())}")
+            elif meta.get("source") == "router":
+                st.caption(f"⚙️ {t('chat_answered_by_router', lang)}")
 
     # Canonical (English) question paired with its translated display label —
     # the router matches English keywords, but nothing shown to the user has
@@ -236,11 +423,12 @@ def _ask_agent_dialog(result, agent_input):
 
 
 def _ask(question: str, result, agent_input, display_as: str | None = None) -> None:
-    st.session_state["chat_history"].append(("user", display_as or question))
+    st.session_state["chat_history"].append(("user", display_as or question, None))
     thinking = t("chat_checking_evidence", lang) if needs_live_evidence(question, result) else t("chat_thinking", lang)
     with st.spinner(thinking):
         resp = assistant_answer(question, result, agent_input, lang=lang)
-    st.session_state["chat_history"].append(("agent", resp["text"]))
+    meta = {"source": resp.get("source"), "provider": resp.get("provider")}
+    st.session_state["chat_history"].append(("agent", resp["text"], meta))
 
 
 # --------------------------------------------------------------------------- #
@@ -277,6 +465,7 @@ with st.sidebar:
             f"**Weather:** `{cfg['weather_provider']}` · **Vision:** `{cfg['vision_provider']}`  \n"
             f"**Recommendation:** `{cfg['recommendation_provider']}` · **Web search:** `{cfg['web_search_provider']}`"
         )
+        st.caption(f"🔌 {_llm_status_line()}")
         st.caption(t("offline_caption", lang))
 
 
@@ -285,10 +474,8 @@ ls = loaded.get("sensors", {}) if loaded else {}
 ll = loaded.get("location", {}) if loaded else {}
 
 # --------------------------------------------------------------------------- #
-# Header + input
+# Input
 # --------------------------------------------------------------------------- #
-st.title(t("app_title", lang))
-st.markdown(f'<p class="sahel-sub">{t("app_tagline", lang)}</p>', unsafe_allow_html=True)
 if settings.demo_judge_mode:
     st.info(t("judge_mode_banner", lang, scenario=loaded.get("title", settings.demo_judge_scenario)))
 
@@ -301,53 +488,58 @@ st.write("")
 
 left, right = st.columns([1, 1])
 with left:
-    st.markdown(f"### {t('input_header', lang)}")
-    up = st.file_uploader(t("image_uploader", lang), type=["jpg", "jpeg", "png", "webp"])
-    image_bytes = None
-    if up is not None:
-        image_bytes = up.read()
-    elif loaded and loaded.get("image"):
-        image_bytes = load_scenario_image(loaded)
-    if image_bytes:
-        try:
-            validate_image_upload(image_bytes)
-            st.image(image_bytes, caption="input image", width=220)
-        except Exception as exc:  # noqa: BLE001
-            st.warning(f"Image rejected: {exc}")
-            image_bytes = None
+    st.markdown(f'<div class="eyebrow">{t("input_header", lang)}</div>', unsafe_allow_html=True)
+    form_card = st.container(border=True)
+    with form_card:
+        st.markdown(f"**🖼️ {t('image_uploader', lang)}**")
+        up = st.file_uploader(t("image_uploader", lang), type=["jpg", "jpeg", "png", "webp"],
+                               label_visibility="collapsed")
+        image_bytes = None
+        if up is not None:
+            image_bytes = up.read()
+        elif loaded and loaded.get("image"):
+            image_bytes = load_scenario_image(loaded)
+        if image_bytes:
+            try:
+                validate_image_upload(image_bytes)
+                st.image(image_bytes, caption="input image", width=220)
+            except Exception as exc:  # noqa: BLE001
+                st.warning(f"Image rejected: {exc}")
+                image_bytes = None
 
-    def _pre(key):
-        v = ls.get(key)
-        return float(v) if v is not None else None
+        def _pre(key):
+            v = ls.get(key)
+            return float(v) if v is not None else None
 
-    st.markdown(f"**{t('sensor_readings_header', lang)}**")
-    c1, c2 = st.columns(2)
-    temp = c1.number_input(t("temperature", lang), value=_pre("temperature_c"),
-                           min_value=-30.0, max_value=60.0, step=0.5, format="%.1f", placeholder="—")
-    soil = c2.number_input(t("soil_moisture", lang), value=_pre("soil_moisture_pct"),
-                           min_value=0.0, max_value=100.0, step=1.0, placeholder="—")
-    c3, c4 = st.columns(2)
-    airh = c3.number_input(t("air_humidity", lang), value=_pre("air_humidity_pct"),
-                           min_value=0.0, max_value=100.0, step=1.0, placeholder="—")
-    rain = c4.number_input(t("rainfall", lang), value=_pre("rainfall_mm"),
-                           min_value=0.0, max_value=2000.0, step=0.5, placeholder="—")
+        st.markdown(f"**📡 {t('sensor_readings_header', lang)}**")
+        c1, c2 = st.columns(2)
+        temp = c1.number_input(t("temperature", lang), value=_pre("temperature_c"),
+                               min_value=-30.0, max_value=60.0, step=0.5, format="%.1f", placeholder="—")
+        soil = c2.number_input(t("soil_moisture", lang), value=_pre("soil_moisture_pct"),
+                               min_value=0.0, max_value=100.0, step=1.0, placeholder="—")
+        c3, c4 = st.columns(2)
+        airh = c3.number_input(t("air_humidity", lang), value=_pre("air_humidity_pct"),
+                               min_value=0.0, max_value=100.0, step=1.0, placeholder="—")
+        rain = c4.number_input(t("rainfall", lang), value=_pre("rainfall_mm"),
+                               min_value=0.0, max_value=2000.0, step=0.5, placeholder="—")
 
-    st.markdown(f"**{t('location_header', lang)}**")
-    loc_label = st.text_input(t("location_label", lang), value=ll.get("label") or "", label_visibility="collapsed",
-                              placeholder=t("location_label", lang))
+        st.markdown(f"**📍 {t('location_header', lang)}**")
+        loc_label = st.text_input(t("location_label", lang), value=ll.get("label") or "", label_visibility="collapsed",
+                                  placeholder=t("location_label", lang))
 
-    with st.expander(t("advanced_input", lang)):
-        stages = [g.value for g in GrowthStage]
-        stage_default = ls.get("growth_stage", "unknown")
-        stage = st.selectbox(t("growth_stage", lang), stages,
-                             index=stages.index(stage_default) if stage_default in stages else stages.index("unknown"))
-        c5, c6 = st.columns(2)
-        lat = c5.number_input(t("latitude", lang), value=float(ll["latitude"]) if ll.get("latitude") is not None else None,
-                              min_value=-90.0, max_value=90.0, format="%.4f", placeholder="—")
-        lon = c6.number_input(t("longitude", lang), value=float(ll["longitude"]) if ll.get("longitude") is not None else None,
-                              min_value=-180.0, max_value=180.0, format="%.4f", placeholder="—")
-        text_context = st.text_area(t("context_optional", lang), value=loaded.get("text_context", "") if loaded else "", height=70)
+        with st.expander(t("advanced_input", lang)):
+            stages = [g.value for g in GrowthStage]
+            stage_default = ls.get("growth_stage", "unknown")
+            stage = st.selectbox(t("growth_stage", lang), stages,
+                                 index=stages.index(stage_default) if stage_default in stages else stages.index("unknown"))
+            c5, c6 = st.columns(2)
+            lat = c5.number_input(t("latitude", lang), value=float(ll["latitude"]) if ll.get("latitude") is not None else None,
+                                  min_value=-90.0, max_value=90.0, format="%.4f", placeholder="—")
+            lon = c6.number_input(t("longitude", lang), value=float(ll["longitude"]) if ll.get("longitude") is not None else None,
+                                  min_value=-180.0, max_value=180.0, format="%.4f", placeholder="—")
+            text_context = st.text_area(t("context_optional", lang), value=loaded.get("text_context", "") if loaded else "", height=70)
 
+    st.write("")
     analyze = st.button(t("analyze_button", lang), type="primary", width="stretch")
 
 # --------------------------------------------------------------------------- #
@@ -369,7 +561,7 @@ if analyze:
         scenario_id=loaded.get("id") if loaded else None,
     )
     with right:
-        st.markdown(f"### {t('agent_activity', lang)}")
+        st.markdown(f'<div class="eyebrow">{t("agent_activity", lang)}</div>', unsafe_allow_html=True)
         with st.spinner(t("agent_working", lang)):
             result = SahelAgent().analyze(agent_input)
     st.session_state["result"] = result
@@ -399,7 +591,7 @@ if result is not None:
         if driver_key else t("no_driver", lang)
     )
     st.markdown(
-        f"""<div class="risk-hero">
+        f"""<div class="risk-hero {combined_level}">
             <div class="risk-eyebrow">{t('risk_hero_label', lang)}</div>
             <span class="risk-badge-big {combined_level}">{t(f'badge_{combined_level}', lang) if f'badge_{combined_level}' in _BADGE_KEYS else combined_level.upper()}</span>
             <div class="risk-situation">{result.situation_line()}</div>
@@ -409,12 +601,13 @@ if result is not None:
     )
 
     # --- 2. three compact indicators ---------------------------------------- #
+    _IND_ICON = {"water_stress": "💧", "heat_stress": "🌡️", "environmental": "🌱"}
     ic1, ic2, ic3 = st.columns(3)
     for col, key in zip((ic1, ic2, ic3), ("water_stress", "heat_stress", "environmental")):
         sub = risk.get(key) or {}
         lvl = (sub.get("level") or "unknown").lower()
         col.markdown(
-            f"""<div class="indicator"><div class="ind-label">{t(_INDICATOR_KEYS[key], lang)}</div>
+            f"""<div class="indicator"><div class="ind-label">{_IND_ICON[key]} {t(_INDICATOR_KEYS[key], lang)}</div>
                 {_badge(lvl)}</div>""",
             unsafe_allow_html=True,
         )
@@ -453,20 +646,21 @@ if result is not None:
         st.session_state["show_details"] = not st.session_state["show_details"]
 
     if evidence and st.session_state["show_evidence"]:
-        with st.container(border=True):
-            for ev in evidence:
-                title = ev.get("title", "source")
-                url = ev.get("url", "")
-                domain = _evidence_domain(url) if url else ""
-                head = f"[{title}]({url})" if url else title
-                badge = "`LIVE`" if evidence_source == "exa" else "`SAMPLE`"
-                st.markdown(f"{badge} **{head}** &nbsp;<span class='small'>{domain}</span>", unsafe_allow_html=True)
-                if ev.get("snippet"):
-                    st.markdown(f'<span class="small">{ev["snippet"]}</span>', unsafe_allow_html=True)
-                st.markdown("---")
+        for ev in evidence:
+            title = ev.get("title", "source")
+            url = ev.get("url", "")
+            domain = _evidence_domain(url) if url else ""
+            head = f"[{title}]({url})" if url else title
+            tag = t("evidence_live", lang) if evidence_source == "exa" else t("evidence_sample", lang)
+            snippet = f'<div class="small" style="margin-top:4px;">{ev["snippet"]}</div>' if ev.get("snippet") else ""
+            st.markdown(
+                f"""<div class="ev-card"><span class="ev-tag">{tag.split(' ', 1)[-1].upper() if tag else 'SOURCE'}</span>
+                    <strong>{head}</strong> <span class="small">{domain}</span>{snippet}</div>""",
+                unsafe_allow_html=True,
+            )
 
     # --- 7. minimized agent activity checklist ---------------------------------- #
-    st.markdown(f"#### {t('agent_activity', lang)}")
+    st.markdown(f'<div class="eyebrow" style="margin-top:18px;">{t("agent_activity", lang)}</div>', unsafe_allow_html=True)
     tools_used = set(result.tools_used)
     items = [
         (t("chk_risk", lang), "calculate_risk" in tools_used),
@@ -474,29 +668,65 @@ if result is not None:
          "search_web" in tools_used),
         (t("chk_reco", lang), "generate_recommendation" in tools_used),
     ]
-    checklist_html = "<div class='checklist'>" + "".join(
-        f"<div class='{'ok' if done else 'skip'}'>{'✓' if done else '·'} {label}</div>"
+    steps_html = "<div class='steps'>" + "".join(
+        f"<div class='step {'ok' if done else 'skip'}'><div class='dot'>{'✓' if done else '·'}</div>"
+        f"<span class='label'>{label}</span></div>"
         for label, done in items
     ) + "</div>"
-    st.markdown(checklist_html, unsafe_allow_html=True)
+    st.markdown(steps_html, unsafe_allow_html=True)
 
     # --- 8. Technical Details (progressive disclosure) --------------------------- #
     if st.session_state["show_details"]:
         with st.container(border=True):
-            st.markdown(f"### {t('technical_details_header', lang)}")
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Reasoning mode", result.reasoning_mode)
-            m2.metric("Tools used", len(result.tools_used))
-            m3.metric("Execution", f"{result.execution_ms:.0f} ms")
-            m4.metric("Confidence", f"{float(rec.get('confidence', risk.get('confidence', 0)) or 0):.0%}")
+            st.markdown(f"### 🔬 {t('technical_details_header', lang)}")
+            st.markdown(
+                f'<div class="tech-kicker">{_t_or("technical_details_sub", "Everything the agent actually did.")}</div>',
+                unsafe_allow_html=True,
+            )
+            _mini_stats([
+                ("Reasoning mode", result.reasoning_mode),
+                ("Tools used", str(len(result.tools_used))),
+                ("Execution", f"{result.execution_ms:.0f} ms"),
+                ("Confidence", f"{float(rec.get('confidence', risk.get('confidence', 0)) or 0):.0%}"),
+            ])
 
             for note in obs.notes:
                 st.markdown(f'<span class="small">• {note}</span>', unsafe_allow_html=True)
 
-            tab_obs, tab_env, tab_risk, tab_rec, tab_conf, tab_run = st.tabs([
-                t("tab_visual", lang), t("tab_env", lang), t("tab_risk", lang),
+            tab_auto, tab_obs, tab_env, tab_risk, tab_rec, tab_conf, tab_run = st.tabs([
+                t("tab_autonomy", lang), t("tab_visual", lang), t("tab_env", lang), t("tab_risk", lang),
                 t("tab_rec", lang), t("tab_conf", lang), t("tab_run", lang),
             ])
+
+            with tab_auto:
+                auto = compute_autonomy(result, get_registry())
+                st.caption(t("autonomy_intro", lang))
+                _mini_stats([
+                    (t("autonomy_mode", lang), auto["operating_mode"]),
+                    (t("autonomy_level", lang), auto["level_label"]),
+                ])
+                st.progress(min(auto["level"], 3) / 3)
+
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.markdown(f"**{t('autonomy_active', lang)}**")
+                    for cap in auto["active_capabilities"]:
+                        st.markdown(f"- ✅ {cap}")
+                with c2:
+                    st.markdown(f"**{t('autonomy_unavailable', lang)}**")
+                    for cap in auto["unavailable_capabilities"]:
+                        st.markdown(f'<span class="small">- ⛔ {cap}</span>', unsafe_allow_html=True)
+
+                st.markdown(f"**{t('autonomy_why', lang)}**")
+                st.markdown(auto["why"])
+
+                st.markdown(f"**{t('autonomy_activity', lang)}**")
+                for note in auto["notes"]:
+                    st.markdown(f"- {note}")
+
+                st.markdown(f"**{t('autonomy_constraints', lang)}**")
+                for c in auto["constraints"]:
+                    st.markdown(f'<span class="small">- {c}</span>', unsafe_allow_html=True)
 
             with tab_obs:
                 v = obs.vision
@@ -618,5 +848,12 @@ if result is not None:
                     st.json(result.model_dump(exclude={"trace"}))
 else:
     with right:
-        st.markdown(f"### {t('agent_activity', lang)}")
-        st.info(t("empty_state", lang))
+        st.markdown(f'<div class="eyebrow">{t("agent_activity", lang)}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f"""<div class="empty-state">
+                <div class="glyph">🛰️</div>
+                <div class="headline">{_t_or('empty_state_headline', 'Ready when you are')}</div>
+                <div>{_bold(t('empty_state', lang))}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )

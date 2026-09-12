@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -8,6 +9,16 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+# The test suite must be deterministic and offline no matter what a developer
+# has in their local `.env` (e.g. a real LLM_PROVIDER=openrouter + API key for
+# manual testing). `app.core.config._load_dotenv` only fills variables that
+# aren't already set in the real environment (`os.environ.setdefault`), so
+# pinning the safe demo defaults here — before any `app.*` module is first
+# imported by test collection — guarantees they win over the .env file.
+os.environ.setdefault("ENVIRONMENT", "demo")
+os.environ.setdefault("DEMO_MODE", "true")
+os.environ.setdefault("LLM_PROVIDER", "mock")
 
 
 @pytest.fixture()

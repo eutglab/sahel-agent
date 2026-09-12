@@ -21,6 +21,7 @@ _SECRET_KEYS = {
     "HACKATHON_WEATHER_API_KEY",
     "WEB_SEARCH_API_KEY",
     "EXA_API_KEY",
+    "OPENROUTER_API_KEY",
 }
 
 
@@ -91,6 +92,15 @@ class Settings:
     openai_model: str = field(default_factory=lambda: _get("OPENAI_MODEL", "gpt-4o-mini"))
     hackathon_llm_base_url: str = field(default_factory=lambda: _get("HACKATHON_LLM_BASE_URL"))
     hackathon_llm_model: str = field(default_factory=lambda: _get("HACKATHON_LLM_MODEL"))
+    # OpenRouter (OpenAI-compatible endpoint, https://openrouter.ai/api/v1). No
+    # model default: OpenRouter's catalogue changes, so the user must choose one.
+    openrouter_base_url: str = field(
+        default_factory=lambda: _get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+    )
+    openrouter_model: str = field(default_factory=lambda: _get("OPENROUTER_MODEL", ""))
+    openrouter_timeout_seconds: int = field(
+        default_factory=lambda: _get_int("OPENROUTER_TIMEOUT_SECONDS", 20)
+    )
 
     weather_provider: str = field(default_factory=lambda: _get("WEATHER_PROVIDER", "local").lower())
     weather_fallback_chain: List[str] = field(
@@ -153,6 +163,8 @@ class Settings:
             "web_search_provider": self.web_search_provider,
             "anthropic_key": redact(get_secret("ANTHROPIC_API_KEY")),
             "openai_key": redact(get_secret("OPENAI_API_KEY")),
+            "openrouter_key": redact(get_secret("OPENROUTER_API_KEY")),
+            "openrouter_model": self.openrouter_model or "<unset>",
             "exa_key": redact(get_secret("EXA_API_KEY") or get_secret("WEB_SEARCH_API_KEY")),
             "agent_max_iterations": self.agent_max_iterations,
             "tool_timeout_seconds": self.tool_timeout_seconds,
