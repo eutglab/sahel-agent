@@ -244,10 +244,10 @@ evidence weighting, and calibrated uncertainty for environmental heuristics.
 
 | Name | Role | Contact |
 |---|---|---|
-| **Hamed Diawara** | **Team Lead** & Agent Architecture — reasoning pipeline, tool registry, fallback design | hameddiawara23@gmail.com · +223 79 45 18 36 |
-| Virgile Fred ADINGBANNON | LLM & Provider Integration — OpenRouter/LLM adapters, fallback chains | adingbannonfred@gmail.com · +223 77 32 67 98 |
-| Aminata Baye Konaké | UI/UX & Demo Experience — Streamlit interface, risk-first design | amia92098@gmail.com · +223 60 24 12 09 |
-| Alfousseyni Coulibaly | Testing, QA & Documentation — test suite, docs, judge-facing materials | lmgalfous@gmail.com · +223 50 96 34 46 |
+| **Hamed Diawara** | **Team Lead** & Agent Architecture — reasoning pipeline, tool registry, fallback design | hameddiawara23@gmail.com |
+| Virgile Fred ADINGBANNON | LLM & Provider Integration — OpenRouter/LLM adapters, fallback chains | adingbannonfred@gmail.com |
+| Aminata Baye Konaké | UI/UX & Demo Experience — Streamlit interface, risk-first design | amia92098@gmail.com |
+| Alfousseyni Coulibaly | Testing, QA & Documentation — test suite, docs, judge-facing materials | lmgalfous@gmail.com |
 
 ## License
 
